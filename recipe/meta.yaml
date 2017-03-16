@@ -11,7 +11,7 @@ source:
   sha256: 717b8d519d66f383a6ae938e255ee4dd103dbab77e4e828dc9cbb0749ec4c1f4
 
 build:
-  number: 0
+  number: 1
   skip: true        # [win]
 
 requirements:
@@ -20,10 +20,10 @@ requirements:
     - libtool
     - automake
     - gf2x
-    - gmp
+    - gmp >=5.0.1,<7
   run:
     - gf2x
-    - gmp
+    - gmp >=5.0.1,<7
 
 test:
   commands:
