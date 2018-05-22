@@ -11,21 +11,24 @@ source:
   sha256: 717b8d519d66f383a6ae938e255ee4dd103dbab77e4e828dc9cbb0749ec4c1f4
 
 build:
-  number: 2
+  number: 3
   skip: true        # [win]
   track_features:
     - ntl
+  run_exports:
+    - {{ pin_subpackage('ntl', max_pin='x.x') }}
 
 requirements:
   build:
-    - toolchain
+    - {{ compiler('c') }}
+    - perl
     - libtool
     - automake
+  host:
     - gf2x
-    - gmp >=5.0.1,<7
+    - gmp
   run:
-    - gf2x
-    - gmp >=5.0.1,<7
+    - gmp
 
 test:
   commands:
@@ -46,3 +49,4 @@ about:
 extra:
   recipe-maintainers:
     - isuruf
+    - saraedum
