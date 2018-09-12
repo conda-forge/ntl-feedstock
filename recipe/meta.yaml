@@ -1,4 +1,4 @@
-{% set version = "10.3.0" %}
+{% set version = "11.3.0" %}
 {% set name = "ntl" %}
 
 package:
@@ -8,10 +8,10 @@ package:
 source:
   fn: {{ name }}-{{ version }}.tar.gz
   url: http://www.shoup.net/ntl/ntl-{{ version }}.tar.gz
-  sha256: 717b8d519d66f383a6ae938e255ee4dd103dbab77e4e828dc9cbb0749ec4c1f4
+  sha256: 3ae0d3647e5d52bc0907e1f4cb4a958460ee8e5b3c9862c1a4b8e9f0f75891dd
 
 build:
-  number: 4
+  number: 0
   skip: true        # [win]
   track_features:
     - ntl

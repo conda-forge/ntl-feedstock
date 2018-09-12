@@ -4,12 +4,16 @@ c_compiler:
 - toolchain_c
 cxx_compiler:
 - toolchain_cxx
+gf2x:
+- '1.2'
 gmp:
 - '6'
 macos_machine:
 - x86_64-apple-darwin13.4.0
 macos_min_version:
 - '10.9'
+ntl:
+- 10.3.0
 pin_run_as_build:
   gmp:
     max_pin: x
