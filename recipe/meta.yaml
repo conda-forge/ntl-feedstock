@@ -11,12 +11,12 @@ source:
   sha256: 717b8d519d66f383a6ae938e255ee4dd103dbab77e4e828dc9cbb0749ec4c1f4
 
 build:
-  number: 3
+  number: 4
   skip: true        # [win]
   track_features:
     - ntl
   run_exports:
-    - {{ pin_compatible('ntl', max_pin='x.x') }}
+    - {{ pin_compatible('ntl', max_pin='x.x.x') }}
 
 requirements:
   build:
