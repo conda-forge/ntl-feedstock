@@ -16,7 +16,7 @@ build:
   track_features:
     - ntl
   run_exports:
-    - {{ pin_compatible('ntl', max_pin='x.x') }}
+    - {{ pin_compatible('ntl', max_pin='x.x.x') }}
 
 requirements:
   build:
