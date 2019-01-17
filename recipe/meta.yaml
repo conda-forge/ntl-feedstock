@@ -6,13 +6,17 @@ package:
   version: {{ version }}
 
 source:
-  fn: {{ name }}-{{ version }}.tar.gz
-  url: http://www.shoup.net/ntl/ntl-{{ version }}.tar.gz
-  sha256: 84ba3145abf8d5f3be6832a14c60b3368eb920719ee96e5774587e71ecd66e9d
+  - url: http://www.shoup.net/ntl/ntl-{{ version }}.tar.gz                     # [not win]
+    sha256: 84ba3145abf8d5f3be6832a14c60b3368eb920719ee96e5774587e71ecd66e9d   # [not win]
+  - url: https://www.shoup.net/ntl/WinNTL-{{ version.replace(".", "_") }}.zip  # [win]
+    sha256: 7488f980ed1b84828f0baea1948233fec328047b27b33a0c3822820f13cc77e2   # [win]
+    patches:
+      - config.gf2x.patch
+      - config.gmp.patch   # [win]
 
 build:
-  number: 1000
-  skip: true        # [win]
+  number: 1001
+  skip: True    # [win and vc<14]
   track_features:
     - ntl
   run_exports:
@@ -20,23 +24,25 @@ build:
 
 requirements:
   build:
-    - libtool
-    - automake
+    - libtool               # [not win]
+    - automake              # [not win]
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
+    - cmake                 # [win]
   host:
     - gf2x
-    - gmp
-  run:
-    - gf2x
-    - gmp
+    - gmp                   # [not win]
+    - mpir                  # [win]
+    - pthreads-win32        # [win]
 
 test:
   commands:
-    - test -f $PREFIX/include/NTL/ZZ.h
-    - test -f $PREFIX/lib/lib{{ name }}.a
-    - test -f $PREFIX/lib/lib{{ name }}.so         # [linux]
-    - test -f $PREFIX/lib/lib{{ name }}.dylib      # [osx]
+    - test -f $PREFIX/include/NTL/ZZ.h              # [linux or osx]
+    - test -f $PREFIX/lib/lib{{ name }}.a           # [linux or osx]
+    - test -f $PREFIX/lib/lib{{ name }}.so          # [linux]
+    - test -f $PREFIX/lib/lib{{ name }}.dylib       # [osx]
+    - if not exist %LIBRARY_BIN%\\ntl.dll exit 1    # [win]
+    - if not exist %LIBRARY_INC%\\NTL\\ZZ.h exit 1  # [win]
 
 about:
   home: http://www.shoup.net/ntl/
@@ -50,3 +56,4 @@ about:
 extra:
   recipe-maintainers:
     - isuruf
+    - saraedum

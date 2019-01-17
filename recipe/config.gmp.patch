@@ -1,0 +1,16 @@
+Enable GMP on Windows
+
+it's enabled on Linux/macOS automatically
+diff --git a/include/NTL/config.h b/include/NTL/config.h
+index 010522a..553c4f6 100644
+--- a/include/NTL/config.h
++++ b/include/NTL/config.h
+@@ -97,7 +97,7 @@ to be defined.  Of course,  to unset a flag, just replace the
+ #endif
+ 
+ 
+-#if 0
++#if 1
+ #define NTL_GMP_LIP
+ 
+ /* 

@@ -1,0 +1,15 @@
+Enable GF2X
+
+diff --git a/include/NTL/config.h b/include/NTL/config.h
+index f39b980..2bcacd5 100644
+--- a/include/NTL/config.h
++++ b/include/NTL/config.h
+@@ -117,7 +117,7 @@ to be defined.  Of course,  to unset a flag, just replace the
+ 
+ #endif
+ 
+-#if 0
++#if 1
+ #define NTL_GF2X_LIB
+ 
+ /* 
