@@ -13,6 +13,7 @@ source:
     patches:
       - config.gf2x.patch
       - config.gmp.patch   # [win]
+      - gen_gmp_aux.cpp.patch  # [win]
 
 build:
   number: 1001

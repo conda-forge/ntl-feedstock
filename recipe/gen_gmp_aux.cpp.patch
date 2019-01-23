@@ -1,0 +1,31 @@
+diff --git a/misc/gen_gmp_aux.cpp b/misc/gen_gmp_aux.cpp
+index c1c21b9..4ff8f84 100644
+--- a/misc/gen_gmp_aux.cpp
++++ b/misc/gen_gmp_aux.cpp
+@@ -128,6 +128,11 @@ int main()
+    if (bad_version)
+       Error("version number mismatch: inconsistency between gmp.h and libgmp");
+ 
++   fprintf(stderr, "sizeof(mp_limb_t) = %ld\n", sizeof(mp_limb_t));
++   fprintf(stderr, "sizeof(long) = %ld\n", sizeof(long));
++   fprintf(stderr, "mp_bits_per_limb = %ld\n", mp_bits_per_limb);
++   fprintf(stderr, "bpl = %ld\n", bpl);
++
+    if (sizeof(mp_limb_t) == sizeof(long) && mp_bits_per_limb == bpl)
+       ntl_zz_nbits = bpl-nail_bits;
+    else if (sizeof(mp_limb_t) == 2*sizeof(long) && mp_bits_per_limb == 2*bpl)
+@@ -135,9 +140,14 @@ int main()
+    else
+       Error("sorry...this is a funny gmp");
+ 
++   fprintf(stderr, "ntl_zz_nbits = %ld\n", ntl_zz_nbits);
++
+    if (ntl_zz_nbits % 2 != 0 || ntl_zz_nbits < 30)
+       Error("sorry...this is a funny gmp");
+ 
++   fprintf(stderr, "sizeof(mp_size_t) = %ld\n", sizeof(mp_size_t));
++   fprintf(stderr, "sizeof(int) = %ld\n", sizeof(int));
++
+    if (sizeof(mp_size_t) != sizeof(long) && sizeof(mp_size_t) != sizeof(int))
+       Error("sorry...this is a funny gmp");
+ 
