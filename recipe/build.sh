@@ -22,5 +22,7 @@ fi
 
 make -j${CPU_COUNT}
 make install
-make check
+if [[ "$target_platform" != "linux-aarch64" ]]; then
+  make check
+fi
 
