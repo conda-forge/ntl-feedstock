@@ -13,13 +13,16 @@ fi
 
 ./configure DEF_PREFIX="$PREFIX" SHARED=on \
         CXXFLAGS="$CXXFLAGS" \
+        LDFLAGS="$LDFLAGS" \
         NTL_GMP_LIP=on \
         NTL_GF2X_LIB=on \
         NATIVE=off \
         NTL_THREADS=off \
         CXX=$CXX
 
-make
-make check
+make -j${CPU_COUNT}
 make install
+if [[ "$target_platform" != "linux-aarch64" ]]; then
+  make check
+fi
 

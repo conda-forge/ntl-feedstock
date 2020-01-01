@@ -22,6 +22,7 @@ requirements:
   build:
     - libtool
     - automake
+    - make
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
   host:
