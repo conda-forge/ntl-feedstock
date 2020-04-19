@@ -40,7 +40,7 @@ test:
 about:
   home: http://www.shoup.net/ntl/
   doc_url: http://www.shoup.net/ntl/doc/tour.html
-  license: LGPL v2+
+  license: LGPL-2.0-or-later
   license_file: doc/copying.txt
   summary: A Library for doing Number Theory
   description: |
