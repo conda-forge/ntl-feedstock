@@ -3,7 +3,7 @@ About ntl
 
 Home: http://www.shoup.net/ntl/
 
-Package license: LGPL v2+
+Package license: LGPL-2.0-or-later
 
 Feedstock license: BSD 3-Clause
 
