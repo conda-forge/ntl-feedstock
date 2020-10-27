@@ -11,7 +11,7 @@ source:
   sha256: b7c1ccdc64840e6a24351eb4a1e68887d29974f03073a1941c906562c0b83ad2
 
 build:
-  number: 0
+  number: 1
   skip: true        # [win]
   run_exports:
     - ntl {{ version }}
