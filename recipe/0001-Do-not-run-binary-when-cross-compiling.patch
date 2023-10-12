@@ -1,0 +1,44 @@
+From 705a02bdb518a28d00a5bc7d1485c4a0ede433ba Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Julian=20R=C3=BCth?= <julian.rueth@fsfe.org>
+Date: Fri, 13 Oct 2023 02:39:26 +0300
+Subject: [PATCH] Do not run binary when cross compiling
+
+---
+ src/DoConfig | 20 ++++----------------
+ 1 file changed, 4 insertions(+), 16 deletions(-)
+
+diff --git a/src/DoConfig b/src/DoConfig
+index f6ea3d0..010165a 100644
+--- a/src/DoConfig
++++ b/src/DoConfig
+@@ -636,23 +636,11 @@ unlink "need-to-run-configure";
+ #   used to set floating point flags intelligently
+ GenFiles();
+ CopyFiles();
+-RemoveProg("GenConfigInfo");
+-system("echo '*** building GenConfigInfo' >> CompilerOutput.log");
+ 
+-if(system("$MakeSub{'MAKE_PROG'} GenConfigInfo >> CompilerOutput.log 2>&1")) { 
+-   print("Compilation failed\n");
+-   print("See CompilerOutput.log for details\n");
+-   die "Goodbye!";
+-}
+-
+-my $config_info = `./GenConfigInfo`;
+-
+-my ($compiler_name, $language_standard, $cpu_type, $os_name);
+-($compiler_name, $language_standard, $cpu_type, $os_name) =
+-   ($config_info =~ /\((.*?),(.*?),(.*?),(.*?)\)/) or die "Error: GenConfigInfo failed";
+-
+-# convert to number
+-$language_standard += 0 or Warning("__cplusplus not correctly defined");
++my $compiler_name = "clang";
++my $language_standard = 2017;
++my $cpu_type = "unknown";
++my $os_name = "macos";
+ 
+ print("compiler_name=$compiler_name\n");
+ print("language_standard=$language_standard\n");
+-- 
+2.42.0
+
