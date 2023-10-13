@@ -1,4 +1,4 @@
-From 8aaa56acb51bcd4134460440ea1360c94377fb4c Mon Sep 17 00:00:00 2001
+From ba79893e3b5d86ec3f2ef2d058ee6a0c159a2343 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Julian=20R=C3=BCth?= <julian.rueth@fsfe.org>
 Date: Fri, 13 Oct 2023 19:58:35 +0300
 Subject: [PATCH] Do not run binaries when cross-compiling for Silicon
@@ -7,8 +7,8 @@ Subject: [PATCH] Do not run binaries when cross-compiling for Silicon
  gmp_aux.h.osx_arm64   |   3 +
  mach_desc.h.osx_arm64 | 849 ++++++++++++++++++++++++++++++++++++++++++
  src/DoConfig          | 112 +-----
- src/mfile             |  64 ++--
- 4 files changed, 891 insertions(+), 137 deletions(-)
+ src/mfile             |  70 ++--
+ 4 files changed, 892 insertions(+), 142 deletions(-)
  create mode 100644 gmp_aux.h.osx_arm64
  create mode 100644 mach_desc.h.osx_arm64
 
@@ -1008,7 +1008,7 @@ index f6ea3d0..77efa2c 100644
  GenFiles();
  CopyFiles();
 diff --git a/src/mfile b/src/mfile
-index 1c704d0..97a0109 100644
+index 1c704d0..c7aa58b 100644
 --- a/src/mfile
 +++ b/src/mfile
 @@ -329,42 +329,48 @@ setup-phase: need-to-run-configure
@@ -1089,6 +1089,19 @@ index 1c704d0..97a0109 100644
  
  
  ntl.a:	$(OBJ) 
+@@ -415,11 +421,7 @@ CheckThreads: CheckThreads.cpp
+ #################################################################
+ 
+ check:
+-	sh RemoveProg $(PROGS)
+-	$(MAKE) QuickTest
+-	./QuickTest
+-	sh RemoveProg QuickTest
+-	sh TestScript "$(MAKE)"
++	echo "Not testing."
+ 
+ #################################################################
+ #
 -- 
 2.42.0
 
