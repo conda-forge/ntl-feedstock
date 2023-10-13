@@ -1,4 +1,4 @@
-From 124b74b9220239630d858c7819b43495b7784cc3 Mon Sep 17 00:00:00 2001
+From 8aaa56acb51bcd4134460440ea1360c94377fb4c Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Julian=20R=C3=BCth?= <julian.rueth@fsfe.org>
 Date: Fri, 13 Oct 2023 19:58:35 +0300
 Subject: [PATCH] Do not run binaries when cross-compiling for Silicon
@@ -7,8 +7,8 @@ Subject: [PATCH] Do not run binaries when cross-compiling for Silicon
  gmp_aux.h.osx_arm64   |   3 +
  mach_desc.h.osx_arm64 | 849 ++++++++++++++++++++++++++++++++++++++++++
  src/DoConfig          | 112 +-----
- src/mfile             |  34 +-
- 4 files changed, 861 insertions(+), 137 deletions(-)
+ src/mfile             |  64 ++--
+ 4 files changed, 891 insertions(+), 137 deletions(-)
  create mode 100644 gmp_aux.h.osx_arm64
  create mode 100644 mach_desc.h.osx_arm64
 
@@ -1008,10 +1008,10 @@ index f6ea3d0..77efa2c 100644
  GenFiles();
  CopyFiles();
 diff --git a/src/mfile b/src/mfile
-index 1c704d0..0891d86 100644
+index 1c704d0..97a0109 100644
 --- a/src/mfile
 +++ b/src/mfile
-@@ -329,42 +329,18 @@ setup-phase: need-to-run-configure
+@@ -329,42 +329,48 @@ setup-phase: need-to-run-configure
  	touch setup-phase
  
  
@@ -1052,6 +1052,36 @@ index 1c704d0..0891d86 100644
 -
 -# setup4 runs the wizard
 +	cp ../gmp_aux.h.osx_arm64 ../include/NTL/gmp_aux.h
++	echo "" > "../include/NTL/HAVE_SSSE3.h"
++	echo "" > "../include/NTL/HAVE_AVX.h"
++	echo "" > "../include/NTL/HAVE_PCLMUL.h"
++	echo "" > "../include/NTL/HAVE_AVX2.h"
++	echo "" > "../include/NTL/HAVE_FMA.h"
++	echo "" > "../include/NTL/HAVE_AVX512F.h"
++	echo "" > "../include/NTL/HAVE_POSIX_TIME.h"
++	echo "" > "../include/NTL/HAVE_AES_NI.h"
++	echo "" > "../include/NTL/HAVE_KMA.h"
++	echo "#ifndef NTL_HAVE_ALIGNED_ARRAY" > "../include/NTL/HAVE_ALIGNED_ARRAY.h"
++	echo "#define NTL_HAVE_ALIGNED_ARRAY" >> "../include/NTL/HAVE_ALIGNED_ARRAY.h"
++	echo "#endif" >> "../include/NTL/HAVE_ALIGNED_ARRAY.h"
++	echo "#ifndef NTL_HAVE_BUILTIN_CLZL" > "../include/NTL/HAVE_BUILTIN_CLZL.h"
++	echo "#define NTL_HAVE_BUILTIN_CLZL" >> "../include/NTL/HAVE_BUILTIN_CLZL.h"
++	echo "#endif" >> "../include/NTL/HAVE_BUILTIN_CLZL.h"
++	echo "#ifndef NTL_HAVE_LL_TYPE" > "../include/NTL/HAVE_LL_TYPE.h"
++	echo "#define NTL_HAVE_LL_TYPE" >> "../include/NTL/HAVE_LL_TYPE.h"
++	echo "#endif" >> "../include/NTL/HAVE_LL_TYPE.h"
++	echo "#ifndef NTL_HAVE_COPY_TRAITS1" > "../include/NTL/HAVE_COPY_TRAITS1.h"
++	echo "#define NTL_HAVE_COPY_TRAITS1" >> "../include/NTL/HAVE_COPY_TRAITS1.h"
++	echo "#endif" >> "../include/NTL/HAVE_COPY_TRAITS1.h"
++	echo "#ifndef NTL_HAVE_COPY_TRAITS2" > "../include/NTL/HAVE_COPY_TRAITS2.h"
++	echo "#define NTL_HAVE_COPY_TRAITS2" >> "../include/NTL/HAVE_COPY_TRAITS2.h"
++	echo "#endif" >> "../include/NTL/HAVE_COPY_TRAITS2.h"
++	echo "#ifndef NTL_HAVE_CHRONO_TIME" > "../include/NTL/HAVE_CHRONO_TIME.h"
++	echo "#define NTL_HAVE_CHRONO_TIME" >> "../include/NTL/HAVE_CHRONO_TIME.h"
++	echo "#endif" >> "../include/NTL/HAVE_CHRONO_TIME.h"
++	echo "#ifndef NTL_HAVE_MACOS_TIME" > "../include/NTL/HAVE_MACOS_TIME.h"
++	echo "#define NTL_HAVE_MACOS_TIME" >> "../include/NTL/HAVE_MACOS_TIME.h"
++	echo "#endif" >> "../include/NTL/HAVE_MACOS_TIME.h"
  
  setup4:
 -	sh Wizard $(WIZARD) "$(MAKE)" "$(FEATURES)"
