@@ -1,4 +1,4 @@
-From b1e56446f0ddeb13226e3f614abeae6536d253e4 Mon Sep 17 00:00:00 2001
+From d269485236a3cc40c0444669f90f53726e39a0a8 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Julian=20R=C3=BCth?= <julian.rueth@fsfe.org>
 Date: Fri, 13 Oct 2023 19:58:35 +0300
 Subject: [PATCH] Do not run binaries when cross-compiling for Silicon
@@ -1008,7 +1008,7 @@ index f6ea3d0..77efa2c 100644
  GenFiles();
  CopyFiles();
 diff --git a/src/mfile b/src/mfile
-index 1c704d0..179a219 100644
+index 1c704d0..cc80ada 100644
 --- a/src/mfile
 +++ b/src/mfile
 @@ -329,42 +329,18 @@ setup-phase: need-to-run-configure
@@ -1025,7 +1025,7 @@ index 1c704d0..179a219 100644
 -
 -
 -# setup2 does some dynamic checks for GetTime, GetPID, and other features
-+	cp mach_desc.h.osx_arm64 include/NTL/mach_desc.h
++	cp ../mach_desc.h.osx_arm64 include/NTL/mach_desc.h
  
  setup2:
 -	echo "*** CheckFeatures log ***" > CheckFeatures.log
@@ -1051,7 +1051,7 @@ index 1c704d0..179a219 100644
 -	$(LINK) $(GF2X_OPT_INCDIR) -o gf2x_version_1_2_or_later_required gf2x_version_1_2_or_later_required.cpp $(GF2X_OPT_LIBDIR) $(GF2X_OPT_LIB) $(LDLIBS) 
 -
 -# setup4 runs the wizard
-+	cp gmp_aux.h.osx_arm64 include/NTL/gmp_aux.h
++	cp ../gmp_aux.h.osx_arm64 include/NTL/gmp_aux.h
  
  setup4:
 -	sh Wizard $(WIZARD) "$(MAKE)" "$(FEATURES)"
