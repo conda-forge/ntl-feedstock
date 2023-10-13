@@ -10,7 +10,7 @@ source:
   url: http://www.shoup.net/ntl/ntl-{{ version }}.tar.gz
   sha256: 210d06c31306cbc6eaf6814453c56c776d9d8e8df36d74eb306f6a523d1c6a8a
   patches:
-    - 0001-Do-not-run-binary-when-cross-compiling.patch  # [build_platform != target_platform and target_platform == "osx-arm64"]
+    - 0001-Do-not-run-binaries-when-cross-compiling-for-Silicon.patch  # [build_platform != target_platform and target_platform == "osx-arm64"]
 
 build:
   number: 0
