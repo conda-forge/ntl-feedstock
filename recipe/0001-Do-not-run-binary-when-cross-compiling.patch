@@ -1,14 +1,14 @@
-From 705a02bdb518a28d00a5bc7d1485c4a0ede433ba Mon Sep 17 00:00:00 2001
+From eea2a914226aa59a12de3e1974d883ef04964a07 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Julian=20R=C3=BCth?= <julian.rueth@fsfe.org>
 Date: Fri, 13 Oct 2023 02:39:26 +0300
 Subject: [PATCH] Do not run binary when cross compiling
 
 ---
- src/DoConfig | 20 ++++----------------
- 1 file changed, 4 insertions(+), 16 deletions(-)
+ src/DoConfig | 112 ++-------------------------------------------------
+ 1 file changed, 4 insertions(+), 108 deletions(-)
 
 diff --git a/src/DoConfig b/src/DoConfig
-index f6ea3d0..010165a 100644
+index f6ea3d0..77efa2c 100644
 --- a/src/DoConfig
 +++ b/src/DoConfig
 @@ -636,23 +636,11 @@ unlink "need-to-run-configure";
@@ -39,6 +39,105 @@ index f6ea3d0..010165a 100644
  
  print("compiler_name=$compiler_name\n");
  print("language_standard=$language_standard\n");
+@@ -701,98 +689,6 @@ if ($native_flag) {
+    CheckFlag('-march=native');
+ }
+ 
+-# disable floating-point optimizations that are not value safe
+-# for most compilers, the default at optimzation  '-O2' is to 
+-# disable such optimizations. icc is the big exception,
+-# so we compile all of NTL with the "-fp-model precise" flag.
+-# On older IA-32 machines, this also has the effect of preventing
+-# calculations in "extended double" precision.
+-
+-if ($compiler_name eq 'icc') {
+-   CheckFlag('-fp-model precise');
+-}
+-
+-
+-# logic to disable floating-point contractions (FMA) in quad_float.cpp.
+-# This is an issue on machines with FMA instructions.
+-# By default, gcc and icc allow contractions, while clang does not.
+-
+-sub CheckContract {
+-   return Exec("CheckContract");
+-}
+-
+-# on success, returns 1 and leaves flag set
+-sub FixContract {
+-   my ($flag) = @_;
+-   print "*** checking $flag flag\n";
+-   system("echo '*** checking $flag flag' >> CompilerOutput.log");
+-   $MakeSub{'NOCONTRACT'} = $flag . ' ' . '-DNTL_CONTRACTION_FIXED';
+-
+-   my $result = CheckContract();
+-   if ($result) {
+-      print "   $flag works\n";
+-   }
+-   else {
+-      print "   $flag does not work\n";
+-      $MakeSub{'NOCONTRACT'} = '';
+-   }
+-   return $result;
+-}
+-
+-
+-if (!CheckContract()) {
+-   if (exists($Variable{'NOCONTRACT'})) {
+-      Warning("cannot disable floating point contraction");
+-   } 
+-   elsif ($compiler_name eq 'gcc') {
+-      FixContract('-ffp-contract=off') ||
+-      FixContract('-mno-fused-madd') || # obsolete, but may work on older gcc's
+-      Warning("cannot disable floating point contraction");
+-   } 
+-   elsif ($compiler_name eq 'clang') {
+-      # this really should not be necessary with clang: the default
+-      # is no contractions 
+-      FixContract('-ffp-contract=off') ||
+-      Warning("cannot disable floating point contraction");
+-   }
+-   elsif ($compiler_name eq 'icc') {
+-      # defining NTL_FP_CONTRACT_OFF will make the source
+-      # code use the pragma fp_contract(off)
+-      FixContract('-DNTL_FP_CONTRACT_OFF') ||
+-      Warning("cannot disable floating point contraction");
+-   }
+-   else {
+-      Warning("cannot disable floating point contraction");
+-   }
+-}
+-
+-# logic to check that threads and TLS are working...enable NTL_TLS_HACK 
+-# if necessary
+-
+-sub CheckThreads {
+-   return Exec("CheckThreads");
+-}
+-
+-if ($ConfigSub{'NTL_THREADS'}) {
+-
+-   if (CheckThreads()) {
+-      print "*** threads are OK \n";
+-   }
+-   else {
+-      if ($ConfigSub{'NTL_TLS_HACK'} == 0) { die "Error: threads are broken"; }
+-      $ConfigSub{'NTL_TLS_HACK'} = 0;
+-      if (CheckThreads()) {
+-         print "*** threads are OK with NTL_TLS_HACK=off\n";
+-      }
+-      else {
+-         die "Error: threads are broken";
+-      }
+-   }
+-
+-}
+-
+-
+-
+ 
+ GenFiles();
+ CopyFiles();
 -- 
 2.42.0
 
