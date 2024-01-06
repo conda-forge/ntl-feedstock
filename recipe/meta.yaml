@@ -1,4 +1,4 @@
-{% set version = "11.4.3" %}
+{% set version = "11.5.1" %}
 {% set name = "ntl" %}
 
 package:
@@ -8,10 +8,12 @@ package:
 source:
   fn: {{ name }}-{{ version }}.tar.gz
   url: http://www.shoup.net/ntl/ntl-{{ version }}.tar.gz
-  sha256: b7c1ccdc64840e6a24351eb4a1e68887d29974f03073a1941c906562c0b83ad2
+  sha256: 210d06c31306cbc6eaf6814453c56c776d9d8e8df36d74eb306f6a523d1c6a8a
+  patches:
+    - 0001-Do-not-run-binaries-when-cross-compiling-for-Silicon.patch  # [build_platform != target_platform and target_platform == "osx-arm64"]
 
 build:
-  number: 2
+  number: 1
   skip: True    # [win and vc<14]
   run_exports:
     - ntl {{ version }}
@@ -41,7 +43,7 @@ test:
 about:
   home: http://www.shoup.net/ntl/
   doc_url: http://www.shoup.net/ntl/doc/tour.html
-  license: LGPL-2.0-or-later
+  license: LGPL-2.1-or-later
   license_file: doc/copying.txt
   summary: A Library for doing Number Theory
   description: |

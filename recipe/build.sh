@@ -3,7 +3,6 @@
 cp $BUILD_PREFIX/share/libtool/build-aux/config.* ./src/libtool-origin
 
 cd src
-chmod +x configure
 
 export CFLAGS="-O2 -g $CFLAGS"
 export CXXFLAGS="-O2 -g $CXXFLAGS"

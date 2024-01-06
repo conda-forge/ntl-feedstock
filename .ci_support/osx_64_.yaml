@@ -1,50 +1,25 @@
 MACOSX_DEPLOYMENT_TARGET:
 - '10.9'
 c_compiler:
-<<<<<<<< HEAD:.ci_support/osx_.yaml
-- clang
-|||||||| 22efd44:.ci_support/osx_c_compilertoolchain_ccxx_compilertoolchain_cxx.yaml
-- toolchain_c
-========
 - clang
 c_compiler_version:
-- '10'
->>>>>>>> origin/main:.ci_support/osx_64_.yaml
+- '16'
 channel_sources:
-- conda-forge,defaults
+- conda-forge
 channel_targets:
 - conda-forge main
 cxx_compiler:
-<<<<<<<< HEAD:.ci_support/osx_.yaml
-- clangxx
-|||||||| 22efd44:.ci_support/osx_c_compilertoolchain_ccxx_compilertoolchain_cxx.yaml
-- toolchain_cxx
-========
 - clangxx
 cxx_compiler_version:
-- '10'
->>>>>>>> origin/main:.ci_support/osx_64_.yaml
+- '16'
 gf2x:
 - '1.3'
 gmp:
 - '6'
 macos_machine:
 - x86_64-apple-darwin13.4.0
-pin_run_as_build:
-  gmp:
-    max_pin: x
-<<<<<<<< HEAD:.ci_support/osx_.yaml
-|||||||| 22efd44:.ci_support/osx_c_compilertoolchain_ccxx_compilertoolchain_cxx.yaml
-zip_keys:
-- - c_compiler
-  - cxx_compiler
-  - channel_sources
-  - channel_targets
-  - build_number_decrement
-========
 target_platform:
 - osx-64
 zip_keys:
 - - c_compiler_version
   - cxx_compiler_version
->>>>>>>> origin/main:.ci_support/osx_64_.yaml
