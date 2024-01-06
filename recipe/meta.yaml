@@ -13,31 +13,32 @@ source:
     - 0001-Do-not-run-binaries-when-cross-compiling-for-Silicon.patch  # [build_platform != target_platform and target_platform == "osx-arm64"]
 
 build:
-  number: 0
-  skip: true        # [win]
+  number: 1
+  skip: True    # [win and vc<14]
   run_exports:
     - ntl {{ version }}
 
 requirements:
   build:
-    - libtool
-    - automake
-    - make
+    - libtool               # [not win]
+    - automake              # [not win]
+    - make                  # [not win]
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
+    - cmake                 # [win]
   host:
     - gf2x
-    - gmp
-  run:
-    - gf2x
-    - gmp
+    - gmp                   # [not win]
+    - pthreads-win32        # [win]
 
 test:
   commands:
-    - test -f $PREFIX/include/NTL/ZZ.h
-    - test -f $PREFIX/lib/lib{{ name }}.a
-    - test -f $PREFIX/lib/lib{{ name }}.so         # [linux]
-    - test -f $PREFIX/lib/lib{{ name }}.dylib      # [osx]
+    - test -f $PREFIX/include/NTL/ZZ.h              # [linux or osx]
+    - test -f $PREFIX/lib/lib{{ name }}.a           # [linux or osx]
+    - test -f $PREFIX/lib/lib{{ name }}.so          # [linux]
+    - test -f $PREFIX/lib/lib{{ name }}.dylib       # [osx]
+    - if not exist %LIBRARY_BIN%\\ntl.dll exit 1    # [win]
+    - if not exist %LIBRARY_INC%\\NTL\\ZZ.h exit 1  # [win]
 
 about:
   home: http://www.shoup.net/ntl/
