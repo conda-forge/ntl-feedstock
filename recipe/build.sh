@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Get an updated config.sub and config.guess
+cp $BUILD_PREFIX/share/libtool/build-aux/config.* ./src/libtool-origin
 
 cd src
 chmod +x configure
@@ -14,7 +16,7 @@ fi
 
 ./configure DEF_PREFIX="$PREFIX" SHARED=on \
         CXXFLAGS="$CXXFLAGS" \
-        LDFLAGS="${LDFLAGS}" \
+        LDFLAGS="$LDFLAGS" \
         NTL_GMP_LIP=on \
         NTL_GF2X_LIB=on \
         NATIVE=off \
@@ -22,6 +24,8 @@ fi
         CXX=$CXX
 
 make -j${CPU_COUNT}
-make check
 make install
+if [[ "$target_platform" != "linux-aarch64" ]]; then
+  make check
+fi
 

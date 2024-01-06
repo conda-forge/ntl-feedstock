@@ -1,4 +1,4 @@
-{% set version = "11.3.2" %}
+{% set version = "11.4.3" %}
 {% set name = "ntl" %}
 
 package:
@@ -6,18 +6,13 @@ package:
   version: {{ version }}
 
 source:
-  - url: http://www.shoup.net/ntl/ntl-{{ version }}.tar.gz                     # [not win]
-    sha256: 84ba3145abf8d5f3be6832a14c60b3368eb920719ee96e5774587e71ecd66e9d   # [not win]
-  - url: https://www.shoup.net/ntl/WinNTL-{{ version.replace(".", "_") }}.zip  # [win]
-    sha256: 7488f980ed1b84828f0baea1948233fec328047b27b33a0c3822820f13cc77e2   # [win]
-    patches:
-      - config.gf2x.patch
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: http://www.shoup.net/ntl/ntl-{{ version }}.tar.gz
+  sha256: b7c1ccdc64840e6a24351eb4a1e68887d29974f03073a1941c906562c0b83ad2
 
 build:
-  number: 1001
+  number: 2
   skip: True    # [win and vc<14]
-  track_features:
-    - ntl
   run_exports:
     - ntl {{ version }}
 
@@ -25,6 +20,7 @@ requirements:
   build:
     - libtool               # [not win]
     - automake              # [not win]
+    - make                  # [not win]
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - cmake                 # [win]
@@ -45,7 +41,7 @@ test:
 about:
   home: http://www.shoup.net/ntl/
   doc_url: http://www.shoup.net/ntl/doc/tour.html
-  license: LGPL v2+
+  license: LGPL-2.0-or-later
   license_file: doc/copying.txt
   summary: A Library for doing Number Theory
   description: |
