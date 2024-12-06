@@ -9,4 +9,4 @@ cmake -G Ninja ^
       ..
 
 ninja install -j%CPU_COUNT%
-ctest
+ctest --output-on-failure
