@@ -29,7 +29,7 @@ requirements:
     - cmake                 # [win]
     - ninja                 # [win]
   host:
-    - gf2x
+    - gf2x                  # [not win]
     - gmp
     - winpthreads-devel     # [win]
 
