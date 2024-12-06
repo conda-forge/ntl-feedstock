@@ -22,11 +22,11 @@ Subject: [PATCH] Add CMake build
  create mode 100644 cmake/ntl_run_test_diff.cmake
  create mode 100644 src/config.h.in
 
-diff --git a/CMakeLists.txt b/CMakeLists.txt
+diff --git CMakeLists.txt CMakeLists.txt
 new file mode 100644
 index 0000000..51e8f95
 --- /dev/null
-+++ b/CMakeLists.txt
++++ CMakeLists.txt
 @@ -0,0 +1,534 @@
 +cmake_minimum_required(VERSION 3.10)
 +
@@ -562,11 +562,11 @@ index 0000000..51e8f95
 +        add_test(${TEST_EXECUTABLE} ${TEST_EXECUTABLE})
 +    endforeach()
 +endif()
-diff --git a/cmake/FindGF2X.cmake b/cmake/FindGF2X.cmake
+diff --git cmake/FindGF2X.cmake cmake/FindGF2X.cmake
 new file mode 100644
 index 0000000..8a31a5b
 --- /dev/null
-+++ b/cmake/FindGF2X.cmake
++++ cmake/FindGF2X.cmake
 @@ -0,0 +1,20 @@
 +
 +find_path(GF2X_INCLUDE_DIRS NAMES gf2x.h PATHS ${GF2X_PREFIX}/include ${GF2X_INCDIR})
@@ -588,11 +588,11 @@ index 0000000..8a31a5b
 +find_package_handle_standard_args(GF2X DEFAULT_MSG
 +                                  GF2X_INCLUDE_DIRS GF2X_LIBRARIES)
 +mark_as_advanced(GF2X_INCLUDE_DIRS GF2X_LIBRARIES)
-diff --git a/cmake/FindGMP.cmake b/cmake/FindGMP.cmake
+diff --git cmake/FindGMP.cmake cmake/FindGMP.cmake
 new file mode 100644
 index 0000000..c3c79da
 --- /dev/null
-+++ b/cmake/FindGMP.cmake
++++ cmake/FindGMP.cmake
 @@ -0,0 +1,8 @@
 +find_path(GMP_INCLUDE_DIRS NAMES  gmp.h PATHS ${GMP_PREFIX}/include ${GMP_INCDIR})
 +
@@ -602,11 +602,11 @@ index 0000000..c3c79da
 +find_package_handle_standard_args(GMP DEFAULT_MSG
 +                                  GMP_INCLUDE_DIRS GMP_LIBRARIES)
 +mark_as_advanced(GMP_INCLUDE_DIRS GMP_LIBRARIES)
-diff --git a/cmake/GetCXXStandard.cpp b/cmake/GetCXXStandard.cpp
+diff --git cmake/GetCXXStandard.cpp cmake/GetCXXStandard.cpp
 new file mode 100644
 index 0000000..5a59cfa
 --- /dev/null
-+++ b/cmake/GetCXXStandard.cpp
++++ cmake/GetCXXStandard.cpp
 @@ -0,0 +1,25 @@
 +#include <iostream>
 +
@@ -633,11 +633,11 @@ index 0000000..5a59cfa
 +
 +   std::cout << language_standard;
 +}
-diff --git a/cmake/UserOverride.cmake b/cmake/UserOverride.cmake
+diff --git cmake/UserOverride.cmake cmake/UserOverride.cmake
 new file mode 100644
 index 0000000..e69dcdd
 --- /dev/null
-+++ b/cmake/UserOverride.cmake
++++ cmake/UserOverride.cmake
 @@ -0,0 +1,13 @@
 +# This overrides the default CMake Debug and Release compiler options.
 +# The user can still specify different options by setting the
@@ -652,11 +652,11 @@ index 0000000..e69dcdd
 +if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
 +    set(CMAKE_CXX_FLAGS_RELEASE_INIT "-O2 -DNDEBUG")
 +endif ()
-diff --git a/cmake/gen_feature_header.cmake b/cmake/gen_feature_header.cmake
+diff --git cmake/gen_feature_header.cmake cmake/gen_feature_header.cmake
 new file mode 100644
 index 0000000..8bbea62
 --- /dev/null
-+++ b/cmake/gen_feature_header.cmake
++++ cmake/gen_feature_header.cmake
 @@ -0,0 +1,31 @@
 +if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/include/NTL/HAVE_${FEATURE}.h)
 +    execute_process(COMMAND
@@ -689,11 +689,11 @@ index 0000000..8bbea62
 +    configure_file("${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/HAVE_${FEATURE}.h.in" "${CMAKE_CURRENT_BINARY_DIR}/include/NTL/HAVE_${FEATURE}.h")
 +endif()
 +
-diff --git a/cmake/ntl_run_test_diff.cmake b/cmake/ntl_run_test_diff.cmake
+diff --git cmake/ntl_run_test_diff.cmake cmake/ntl_run_test_diff.cmake
 new file mode 100644
 index 0000000..0c65c39
 --- /dev/null
-+++ b/cmake/ntl_run_test_diff.cmake
++++ cmake/ntl_run_test_diff.cmake
 @@ -0,0 +1,8 @@
 +execute_process(COMMAND ${TEST_EXECUTABLE} INPUT_FILE "${TEST_INPUT_FILE}"
 +         OUTPUT_VARIABLE TEST_OUTPUT)
@@ -703,11 +703,11 @@ index 0000000..0c65c39
 +    message("Found Output:    ${TEST_OUTPUT}")
 +    message(FATAL_ERROR "Output not expected")
 +endif()
-diff --git a/src/config.h.in b/src/config.h.in
+diff --git src/config.h.in src/config.h.in
 new file mode 100644
 index 0000000..9510ce3
 --- /dev/null
-+++ b/src/config.h.in
++++ src/config.h.in
 @@ -0,0 +1,543 @@
 +
 +#ifndef NTL_config__H
