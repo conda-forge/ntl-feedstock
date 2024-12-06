@@ -28,8 +28,8 @@ requirements:
     - cmake                 # [win]
   host:
     - gf2x
-    - gmp                   # [not win]
-    - pthreads-win32        # [win]
+    - gmp
+    - winpthreads-devel     # [win]
 
 test:
   commands:
