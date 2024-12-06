@@ -26,6 +26,7 @@ requirements:
     - make                  # [not win]
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}
     - cmake                 # [win]
     - ninja                 # [win]
   host:
