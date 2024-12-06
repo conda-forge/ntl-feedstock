@@ -1,9 +1,12 @@
-copy %RECIPE_DIR%\windows\CMakeLists.txt CMakeLists.txt
+mkdir build
+cd build
 
-cmake -G "%CMAKE_GENERATOR%" ^
+cmake -G Ninja ^
       -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
       -DCMAKE_PREFIX_PATH=%LIBRARY_PREFIX% ^
       -DCMAKE_BUILD_TYPE=Release ^
-      .
+      -DBUILD_TESTING=On ^
+      ..
 
-cmake --build . --target install --config Release
+ninja install -j%CPU_COUNT%
+ctest

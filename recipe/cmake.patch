@@ -1,0 +1,1236 @@
+commit 66134488b00bfb3cd97486486e5ff65857098111
+Author: Isuru Fernando <isuruf@gmail.com>
+Date:   Sat Sep 7 19:08:32 2019 -0500
+
+    Add CMake build
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+new file mode 100644
+index 0000000..51e8f95
+--- /dev/null
++++ b/CMakeLists.txt
+@@ -0,0 +1,534 @@
++cmake_minimum_required(VERSION 3.10)
++
++set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UserOverride.cmake)
++if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
++    message(FATAL_ERROR "NTL build system doesn't allow building in-source."
++            "Create a build directory and run cmake from there")
++endif()
++
++project(NTL)
++
++set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
++include(CheckCXXCompilerFlag)
++
++# Make sure that CMAKE_BUILD_TYPE is either Debug or Release:
++if (NOT CMAKE_BUILD_TYPE)
++    set(CMAKE_BUILD_TYPE RelWithDebInfo
++        CACHE STRING "Build type (Debug, Release, RelWithDebInfo, MinSizeRel)" FORCE)
++endif ()
++if (NOT (CMAKE_BUILD_TYPE MATCHES "^Debug|Release|RelWithDebInfo|MinSizeRel$"))
++    message(FATAL_ERROR "CMAKE_BUILD_TYPE must be one of: Debug, Release (current value: '${CMAKE_BUILD_TYPE}')")
++endif ()
++string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPER)
++
++option(BUILD_SHARED_LIBS "Build shared libs" no)
++option(NATIVE "Build native" no)
++
++if (NOT WIN32)
++    set(NTL_LINK_LIBRARIES -lm)
++endif ()
++
++set(TUNE "generic" CACHE STRING "Tuning method")
++
++option(NTL_LEGACY_NO_NAMESPACE "Legacy no namespace" off)
++option(NTL_LEGACY_INPUT_ERROR "Legacy input error" off)
++option(NTL_DISABLE_LONGDOUBLE "Disable longdouble" off)
++option(NTL_DISABLE_LONGLONG "Disable longlong" off)
++option(NTL_DISABLE_LL_ASM "Disable ll asm" off)
++option(NTL_MAXIMIZE_SP_NBITS "Maximize sp nbits" off)
++option(NTL_LEGACY_SP_MULMOD "Legacy sp mulmod" off)
++option(NTL_THREADS "Threads" on)
++option(NTL_TLS_HACK "Tls hack" on)
++option(NTL_EXCEPTIONS "Exceptions" off)
++option(NTL_STD_CXX11 "std cxx11" on)
++option(NTL_STD_CXX14 "stf cxx14" off)
++option(NTL_DISABLE_MOVE_ASSIGN "Disable move assign" on)
++option(NTL_DISABLE_MOVE "Disable move" off)
++option(NTL_THREAD_BOOST "Thread boost" on)
++option(NTL_GMP_LIP "GMP lip" on)
++option(NTL_GF2X_LIB "GF2X lib" off)
++option(NTL_X86_FIX "x86 fix" off)
++option(NTL_NO_X86_FIX "No x86 fix" off)
++option(NTL_NO_INIT_TRANS "No init trans" on)
++option(NTL_CLEAN_INT "Clean int" off)
++option(NTL_CLEAN_PTR "Clean ptr" on)
++option(NTL_SAFE_VECTORS "Safe vectors" on)
++option(NTL_RANGE_CHECK "Range check" off)
++option(NTL_ENABLE_AVX_FFT "Enable AVX FFT" off)
++option(NTL_AVOID_AVX512 "Avoid AVX512" off)
++option(NTL_SPMM_ULL "SPMM ULL" off)
++option(NTL_AVOID_BRANCHING "Avoid branching" off)
++option(NTL_FFT_BIGTAB "FFT bigtab" off)
++option(NTL_FFT_LAZYMUL "FFT lazymul" off)
++option(NTL_TBL_REM "TBL REM" off)
++option(NTL_CRT_ALTCODE "Crt altcode" off)
++option(NTL_CRT_ALTCODE_SMALL "Crt altcode small" off)
++option(NTL_GF2X_NOINLINE "GF2X noinline" off)
++option(NTL_GF2X_ALTCODE "GF2X altcode" off)
++option(NTL_GF2X_ALTCODE1 "GF2X altcode1" off)
++
++if (NTL_UNSIGNED_LONG_LONG_TYPE)
++    set(FLAG_UNSIGNED_LONG_LONG_TYPE "1" CACHE STRING "is unsigned long long type defined by user")
++else ()
++    set(FLAG_UNSIGNED_LONG_LONG_TYPE "0" CACHE STRING "is unsigned long long type defined by user")
++    set(NTL_UNSIGNED_LONG_LONG_TYPE "unsigned long long"  CACHE STRING "unsigned long long type" )
++endif()
++
++
++# warn against -O3, -Ofast, -ffast-math
++if ("${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}" MATCHES "-O3")
++    message(WARNING "-O3 flag may yield incorrect code")
++endif()
++
++if ("${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}" MATCHES "-Ofast")
++    message(WARNING "-Ofast flag may yield incorrect code")
++endif()
++
++if ("${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}" MATCHES "-ffast-math")
++    message(WARNING "-ffast-math flag may yield incorrect code")
++endif()
++
++if (NOT NTL_THREADS)
++    set(NTL_THREAD_BOOST off)
++endif()
++
++if ("${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}" MATCHES "-march=")
++    set(NATIVE off)
++    message(STATUS "Turning off NATIVE as there is a -march flag in CXXFLAGS")
++endif()
++
++if (NTL_X86_FIX AND NTL_NO_X86_FIX)
++    message(FATAL_ERROR "at most one of NTL_X86_FIX and NTL_NO_X86_FIX may be on")
++endif()
++
++if (NTL_GF2X_ALTCODE AND NTL_GF2X_ALTCODE1)
++    message(FATAL_ERROR "at most one of NTL_GF2X_ALTCODE and NTL_GF2X_ALTCODE1 may be on")
++endif()
++
++if (NTL_CRT_ALTCODE AND NTL_CRT_ALTCODE_SMALL)
++    message(FATAL_ERROR "at most one of NTL_CRT_ALTCODE and NTL_CRT_ALTCODE_SMALL may be on")
++endif()
++
++foreach (opt NATIVE NTL_LEGACY_NO_NAMESPACE NTL_LEGACY_INPUT_ERROR NTL_DISABLE_LONGDOUBLE NTL_DISABLE_LONGLONG NTL_DISABLE_LL_ASM NTL_MAXIMIZE_SP_NBITS NTL_LEGACY_SP_MULMOD NTL_THREADS NTL_TLS_HACK NTL_EXCEPTIONS NTL_STD_CXX11 NTL_STD_CXX14 NTL_DISABLE_MOVE_ASSIGN NTL_DISABLE_MOVE NTL_THREAD_BOOST NTL_GMP_LIP NTL_GF2X_LIB NTL_X86_FIX NTL_NO_X86_FIX NTL_NO_INIT_TRANS NTL_CLEAN_INT NTL_CLEAN_PTR NTL_SAFE_VECTORS NTL_RANGE_CHECK NTL_ENABLE_AVX_FFT NTL_AVOID_AVX512 NTL_SPMM_ULL NTL_AVOID_BRANCHING NTL_FFT_BIGTAB NTL_FFT_LAZYMUL NTL_TBL_REM NTL_CRT_ALTCODE NTL_CRT_ALTCODE_SMALL NTL_GF2X_NOINLINE NTL_GF2X_ALTCODE NTL_GF2X_ALTCODE1)
++    if (${${opt}})
++        set(${opt} "1")
++    else()
++        set(${opt} "0")
++    endif()
++endforeach()
++
++if (NTL_GMP_LIP)
++    find_package(GMP REQUIRED)
++endif()
++if (NTL_GF2X_LIB)
++    find_package(GF2X REQUIRED)
++endif()
++
++set(min_std 0)
++
++# special processing for NTL_THREADS
++
++if (NTL_THREADS)
++    set(min_std 11)
++    option(CMAKE_THREAD_PREFER_PTHREAD "Prefer pthreads" ON)
++    option(THREADS_PREFER_PTHREAD_FLAG "Prefer -pthread flag" ON)
++    find_package(Threads REQUIRED)
++    set(THREADS_LIBRARIES Threads::Threads)
++endif()
++
++if (NTL_EXCEPTIONS)
++    set(min_std 11)
++endif()
++
++if (NTL_SAFE_VECTORS)
++    set(min_std 11)
++endif()
++
++if (NTL_STD_CXX14)
++    set(min_std 14)
++elseif (NTL_STD_CXX11)
++    set(min_std 11)
++elseif (min_std)
++    set(NTL_STD_CXX11 1)
++endif()
++
++try_run(GENCONFIGINFO_RUN_RESULT GENCONFIGINFO_COMPILE_RESULT
++    ${CMAKE_CURRENT_BINARY_DIR}
++    SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GetCXXStandard.cpp"
++    COMPILE_OUTPUT_VARIABLE VAR1
++    RUN_OUTPUT_VARIABLE GENCONFIGINFO_RUN_OUTPUT
++    LINK_LIBRARIES ${NTL_LINK_LIBRARIES}
++)
++
++if (NOT ("${GENCONFIGINFO_RUN_OUTPUT}" STREQUAL "98" OR "${GENCONFIGINFO_RUN_OUTPUT}" STREQUAL "0"))
++    # If the compiler support a newer standard, don't set it on our own.
++    if ("${min_std}" LESS "${GENCONFIGINFO_RUN_OUTPUT}")
++        set(min_std 0)
++        message(STATUS "Using default C++ standard ${GENCONFIGINFO_RUN_OUTPUT}")
++    endif()
++endif()
++
++if (NOT "${min_std}" STREQUAL "0")
++    message(STATUS "Using C++ standard ${min_std}")
++    set(CMAKE_CXX_STANDARD ${min_std})
++    set(CMAKE_CXX_STANDARD_REQUIRED ON)
++endif()
++
++# logic to disable floating-point contractions (FMA) in quad_float.cpp.
++# This is an issue on machines with FMA instructions.
++# By default, gcc and icc allow contractions, while clang does not.
++
++try_run(CHECK_CONTRACT_RUN_RESULT CHECK_CONTRACT_COMPILE_RESULT
++    ${CMAKE_CURRENT_BINARY_DIR}
++    SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/CheckContract.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/CheckContractAux.cpp"
++    LINK_LIBRARIES ${NTL_LINK_LIBRARIES}
++)
++
++include(CheckCXXCompilerFlag)
++
++if ("${CHECK_CONTRACT_RUN_RESULT}" STREQUAL "0")
++    if (NOCONTRACT)
++        message(WARNING "cannot disable floating point contraction")
++    else()
++        if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
++            check_cxx_compiler_flag("-ffp-contract=off" FFP_CONTRACT_OFF_FLAG)
++            if (NOT FFP_CONTRACT_OFF_FLAG)
++                set (NTL_NOCONTRACT_FLAG "-mno-fused-madd")
++            else ()
++                set (NTL_NOCONTRACT_FLAG "-ffp-contract=off")
++            endif()
++        elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
++            set (NTL_NOCONTRACT_FLAG "-ffp-contract=off")
++        elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
++            set (NTL_NOCONTRACT_FLAG "-DNTL_FP_CONTRACT_OFF")
++        endif()
++        try_run(CHECK_CONTRACT2_RUN_RESULT CHECK_CONTRACT2_COMPILE_RESULT
++                ${CMAKE_CURRENT_BINARY_DIR}
++                SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/CheckContract.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/CheckContractAux.cpp"
++                CMAKE_FLAGS "${NTL_NOCONTRACT_FLAG} -DNTL_CONTRACTION_FIXED"
++                LINK_LIBRARIES ${NTL_LINK_LIBRARIES}
++        )
++        if ("${CHECK_CONTRACT2_RUN_RESULT}" STREQUAL "0")
++            set(NTL_NOCONTRACT_FLAGS "${NTL_NOCONTRACT_FLAG} -DNTL_CONTRACTION_FIXED")
++            message(STATUS "Using flags ${NTL_NOCONTRACT_FLAGS}")
++        else()
++            message(WARNING "cannot disable floating point contraction")
++        endif()
++    endif()
++endif()
++
++
++# disable floating-point optimizations that are not value safe
++# for most compilers, the default at optimzation  '-O2' is to
++# disable such optimizations. icc is the big exception,
++# so we compile all of NTL with the "-fp-model precise" flag.
++# On older IA-32 machines, this also has the effect of preventing
++# calculations in "extended double" precision.
++if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
++    check_cxx_compiler_flag("-fp-model precise" FP_MODEL_PRECISE_FLAG)
++    if (FP_MODEL_PRECISE_FLAG)
++        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fp-model precise")
++    endif()
++endif()
++
++if (NATIVE AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel|GNU|Clang")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
++endif()
++
++set(SOURCES)
++
++set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
++
++try_compile(GETPID_COMPILE_RESULT
++    ${CMAKE_CURRENT_BINARY_DIR}
++    SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/GetPID1.cpp"
++    OUTPUT_VARIABLE VAR1
++)
++
++if ("${GETPID_COMPILE_RESULT}" STREQUAL "FALSE")
++    message(STATUS "Trying compiling GetPID1 - failed")
++    set(SOURCES ${SOURCES} GetPID2.cpp)
++else()
++    message(STATUS "Trying compiling GetPID1 - pass")
++    set(SOURCES ${SOURCES} GetPID1.cpp)
++endif()
++
++foreach(TIME_SOURCE GetTime1 GetTime2 GetTime3 GetTime4 GetTime5)
++    try_run(${TIME_SOURCE}_RUN_RESULT ${TIME_SOURCE}_COMPILE_RESULT
++        ${CMAKE_CURRENT_BINARY_DIR}
++        SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/${TIME_SOURCE}.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/TestGetTime.cpp"
++        ARGS 1 1048576 1048575
++    )
++    if ("${${TIME_SOURCE}_RUN_RESULT}" STREQUAL "0")
++        set(SOURCES ${SOURCES} ${TIME_SOURCE}.cpp)
++        message(STATUS "Trying to use ${TIME_SOURCE} - pass")
++        break()
++    elseif ("${${TIME_SOURCE}}" STREQUAL "GetTime5")
++        message(WARNING "${TIME_SOURCE} always returns 0")
++    else()
++        message(STATUS "Trying to use ${TIME_SOURCE} - failed")
++    endif()
++endforeach()
++
++if ("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "AMD64|amd64|x86_64|x86" AND "${TUNE}" STREQUAL "generic")
++    set(TUNE x86)
++endif()
++
++if ("${TUNE}" STREQUAL "auto")
++    message(FATAL_ERROR "Not supported in cmake yet")
++elseif ("${TUNE}" STREQUAL "generic")
++	 # the default values are set to ensure reasonably good performance
++	 # across a wide range of architectures, but it's better to run the
++	 # Wizard. Here, I don't want to assume a cmov-like instruction,
++         # so we set AVOID_BRANCHING to be on the safe side.
++
++	 set(NTL_SPMM_ULL 1)
++	 set(NTL_AVOID_BRANCHING 1)
++	 set(NTL_FFT_BIGTAB 1)
++	 set(NTL_FFT_LAZYMUL 1)
++	 set(NTL_TBL_REM 1)
++	 set(NTL_CRT_ALTCODE 1)
++	 set(NTL_CRT_ALTCODE_SMALL 0)
++	 set(NTL_GF2X_NOINLINE 0)
++	 set(NTL_GF2X_ALTCODE 0)
++	 set(NTL_GF2X_ALTCODE1 1)
++     message(STATUS "Tuning for a generic processor")
++elseif ("${TUNE}" STREQUAL "x86")
++     # these settings should work pretty well across x86's
++     # the most important assumption is that we have the cmov
++     # instruction
++	 set(NTL_SPMM_ULL 1)
++	 set(NTL_AVOID_BRANCHING 0)
++	 set(NTL_FFT_BIGTAB 1)
++	 set(NTL_FFT_LAZYMUL 1)
++	 set(NTL_TBL_REM 1)
++	 set(NTL_CRT_ALTCODE 1)
++	 set(NTL_CRT_ALTCODE_SMALL 0)
++	 set(NTL_GF2X_NOINLINE 0)
++	 set(NTL_GF2X_ALTCODE 0)
++	 set(NTL_GF2X_ALTCODE1 1)
++     message(STATUS "Tuning for a x86/x86_64 processor")
++endif()
++
++configure_file(src/config.h.in "${CMAKE_CURRENT_BINARY_DIR}/include/NTL/config.h")
++
++macro(ntl_check_threads)
++    try_run(CHECK_NTL_THREADS_RUN_RESULT CHECK_NTL_THREADS_COMPILE_RESULT
++        ${CMAKE_CURRENT_BINARY_DIR}
++        SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/CheckThreads.cpp"
++        LINK_LIBRARIES ${NTL_LINK_LIBRARIES} Threads::Threads
++        OUTPUT_VARIABLE VAR1
++        CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${CMAKE_CURRENT_BINARY_DIR}/include;${CMAKE_CURRENT_SOURCE_DIR}/include"
++    )
++endmacro()
++
++if (NTL_THREADS)
++    ntl_check_threads()
++    if ("${CHECK_NTL_THREADS_COMPILE_RESULT}" STREQUAL "TRUE" AND "${CHECK_NTL_THREADS_RUN_RESULT}" STREQUAL "0")
++        message(STATUS "threads are OK")
++    else()
++        if (NOT NTL_TLS_HACK)
++            message(FATAL_ERROR "threads are broken")
++        endif()
++        set(NTL_TLS_HACK 0)
++        configure_file(src/config.h.in "${CMAKE_CURRENT_BINARY_DIR}/include/NTL/config.h")
++        ntl_check_threads()
++        if ("${CHECK_NTL_THREADS_COMPILE_RESULT}" STREQUAL "TRUE" AND "${CHECK_NTL_THREADS_RUN_RESULT}" STREQUAL "1")
++            message(FATAL_ERROR "threads are broken")
++        else()
++            message(STATUS "threads are OK with NTL_TLS_HACK=off")
++        endif()
++    endif()
++endif()
++
++
++set(GENERATED_HEADERS)
++
++add_executable(mach_desc src/MakeDescAux.cpp src/MakeDesc.cpp)
++target_include_directories(mach_desc
++    PUBLIC
++    ${CMAKE_CURRENT_BINARY_DIR}/include
++    ${CMAKE_CURRENT_SOURCE_DIR}/include
++)
++add_custom_command(
++    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/NTL/mach_desc.h
++    COMMAND mach_desc
++    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mach_desc.h ${CMAKE_CURRENT_BINARY_DIR}/include/NTL/mach_desc.h
++    DEPENDS mach_desc
++    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/
++)
++set(GENERATED_HEADERS ${GENERATED_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/include/NTL/mach_desc.h)
++
++add_executable(gen_gmp_aux src/gen_gmp_aux.cpp ${CMAKE_CURRENT_BINARY_DIR}/include/NTL/mach_desc.h)
++target_link_libraries(gen_gmp_aux
++    PUBLIC
++    ${GMP_LIBRARIES}
++    ${NTL_LINK_LIBRARIES}
++)
++target_include_directories(gen_gmp_aux
++    PUBLIC
++    ${CMAKE_CURRENT_BINARY_DIR}/include
++    ${CMAKE_CURRENT_SOURCE_DIR}/include
++)
++
++add_custom_command(
++    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/NTL/gmp_aux.h
++    COMMAND gen_gmp_aux > ${CMAKE_CURRENT_BINARY_DIR}/include/NTL/gmp_aux.h.in
++    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/include/NTL/gmp_aux.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/NTL/gmp_aux.h
++    DEPENDS gen_gmp_aux
++)
++
++set (GENERATED_HEADERS ${GENERATED_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/include/NTL/gmp_aux.h)
++
++foreach(FEATURE ALIGNED_ARRAY BUILTIN_CLZL LL_TYPE SSSE3 AVX PCLMUL AVX2 FMA AVX512F COPY_TRAITS1 COPY_TRAITS2 CHRONO_TIME MACOS_TIME POSIX_TIME AES_NI KMA)
++    add_executable(Check${FEATURE} src/Check${FEATURE}.cpp ${GENERATED_HEADERS})
++    set_target_properties(Check${FEATURE} PROPERTIES
++                          EXCLUDE_FROM_ALL TRUE
++                          EXCLUDE_FROM_DEFAULT_BUILD TRUE)
++    target_include_directories(Check${FEATURE}
++        PUBLIC
++        ${CMAKE_CURRENT_BINARY_DIR}/include
++        ${CMAKE_CURRENT_SOURCE_DIR}/include
++    )
++    # These are serial because some checks depend on other checks
++    # and since we are running cmake as a subprocess, it needs to be serial (otherwise textfile busy issues)
++    add_custom_command(
++        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/NTL/HAVE_${FEATURE}.h
++        COMMAND ${CMAKE_COMMAND} "-DFEATURE=${FEATURE}" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_feature_header.cmake"
++        DEPENDS ${GENERATED_HEADERS}
++    )
++    set (GENERATED_HEADERS ${GENERATED_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/include/NTL/HAVE_${FEATURE}.h)
++endforeach()
++
++set (SOURCES ${SOURCES} FFT.cpp FacVec.cpp GF2.cpp GF2E.cpp GF2EX.cpp GF2EXFactoring.cpp GF2X.cpp
++	GF2X1.cpp GF2XFactoring.cpp GF2XVec.cpp HNF.cpp ctools.cpp LLL.cpp LLL_FP.cpp
++	LLL_QP.cpp LLL_RR.cpp LLL_XD.cpp RR.cpp WordVector.cpp ZZ.cpp ZZVec.cpp ZZX.cpp
++	ZZX1.cpp ZZXCharPoly.cpp ZZXFactoring.cpp ZZ_p.cpp ZZ_pE.cpp ZZ_pEX.cpp
++	ZZ_pEXFactoring.cpp ZZ_pX.cpp ZZ_pX1.cpp ZZ_pXCharPoly.cpp ZZ_pXFactoring.cpp
++	fileio.cpp lip.cpp lzz_p.cpp lzz_pE.cpp lzz_pEX.cpp lzz_pEXFactoring.cpp
++	lzz_pX.cpp lzz_pX1.cpp lzz_pXCharPoly.cpp lzz_pXFactoring.cpp mat_GF2.cpp
++	mat_GF2E.cpp mat_RR.cpp mat_ZZ.cpp mat_ZZ_p.cpp mat_ZZ_pE.cpp mat_lzz_p.cpp
++	mat_lzz_pE.cpp mat_poly_ZZ.cpp mat_poly_ZZ_p.cpp mat_poly_lzz_p.cpp
++	quad_float.cpp quad_float1.cpp tools.cpp vec_GF2.cpp vec_GF2E.cpp vec_RR.cpp vec_ZZ.cpp
++	vec_ZZ_p.cpp vec_ZZ_pE.cpp vec_lzz_p.cpp vec_lzz_pE.cpp xdouble.cpp
++	G_LLL_FP.cpp G_LLL_QP.cpp G_LLL_XD.cpp G_LLL_RR.cpp thread.cpp
++	BasicThreadPool.cpp MatPrime.cpp pd_FFT.cpp
++)
++
++set(SOURCES_WITH_DIR )
++foreach(SOURCE ${SOURCES})
++    set(SOURCES_WITH_DIR ${SOURCES_WITH_DIR} src/${SOURCE})
++endforeach()
++
++if (NOT "${NTL_NOCONTRACT_FLAGS}" STREQUAL "")
++    set_source_files_properties(src/quad_float.cpp src/pd_FFT.cpp PROPERTIES COMPILE_FLAGS ${NTL_NOCONTRACT_FLAGS})
++endif()
++if (NOT "${GMP_INCLUDE_DIRS}" STREQUAL "")
++    set_source_files_properties(src/lip.cpp PROPERTIES INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIRS})
++    set_source_files_properties(src/gen_gmp_aux.cpp PROPERTIES INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIRS})
++endif()
++if (NOT "${GF2X_INCLUDE_DIRS}" STREQUAL "")
++    set_source_files_properties(src/GF2X.cpp PROPERTIES INCLUDE_DIRECTORIES ${GF2X_INCLUDE_DIRS})
++endif()
++
++add_library(ntl ${SOURCES_WITH_DIR} ${GENERATED_HEADERS})
++
++target_include_directories(ntl
++    PUBLIC
++    ${CMAKE_CURRENT_BINARY_DIR}/include
++    ${CMAKE_CURRENT_SOURCE_DIR}/include
++)
++target_link_libraries(ntl
++    PUBLIC
++    ${GMP_LIBRARIES}
++    ${GF2X_LIBRARIES}
++    ${NTL_LINK_LIBRARIES}
++    ${THREADS_LIBRARIES}
++)
++
++set_target_properties(
++    ntl
++    PROPERTIES
++    VERSION 39.0.1
++    SOVERSION 39
++)
++
++include(GNUInstallDirs)
++
++install(TARGETS ntl
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++)
++
++file(GLOB
++    HEADERS_ALL
++        "${CMAKE_CURRENT_SOURCE_DIR}/include/NTL/*.h"
++)
++
++set(HEADERS )
++foreach(HEADER ${HEADERS_ALL})
++    get_filename_component(HEADER_NAME ${HEADER} NAME)
++    if (NOT "${HEADER_NAME}" MATCHES "^HAVE_")
++        set(HEADERS ${HEADERS} ${HEADER})
++    endif()
++endforeach()
++
++install(
++    FILES ${HEADERS} ${GENERATED_HEADERS}
++    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/NTL
++)
++
++file(GLOB NTL_DOCS "${CMAKE_CURRENT_SOURCE_DIR}/doc/*")
++
++install(
++    FILES ${NTL_DOCS}
++    DESTINATION ${CMAKE_INSTALL_DOCDIR}
++)
++
++option(BUILD_TESTING "Build tests" off)
++
++if (BUILD_TESTING)
++    enable_testing()
++    foreach (TEST_SOURCE CharPolyTest GF2EXGCDTest GF2EXTest GF2XTest LLLTest lzz_pEXGCDTest
++                         lzz_pEXTest lzz_pXTest mat_lzz_pTest MatrixTest MoreFacTest QuadTest
++                         RRTest SSMulTest subset ThreadTest ZZ_pEXGCDTest ZZ_pEXTest ZZ_pXTest
++                         ZZTest ZZXFacTest QuickTest BerlekampTest CanZassTest BitMatTest
++            )
++        add_executable(${TEST_SOURCE} src/${TEST_SOURCE}.cpp)
++        target_link_libraries(${TEST_SOURCE} ntl)
++    endforeach()
++
++    foreach(TEST_EXECUTABLE LLLTest QuadTest RRTest CharPolyTest MatrixTest ZZXFacTest BerlekampTest CanZassTest)
++        add_test(NAME ${TEST_EXECUTABLE}
++                 COMMAND ${CMAKE_COMMAND} "-DTEST_EXECUTABLE=$<TARGET_FILE:${TEST_EXECUTABLE}>"
++                         "-DTEST_INPUT_FILE=${CMAKE_CURRENT_SOURCE_DIR}/src/${TEST_EXECUTABLE}In"
++                         "-DTEST_OUTPUT_FILE=${CMAKE_CURRENT_SOURCE_DIR}/src/${TEST_EXECUTABLE}Out"
++                         -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ntl_run_test_diff.cmake")
++    endforeach()
++    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/MoreFacTest.out" "")
++
++    add_test(NAME MoreFacTest
++             COMMAND ${CMAKE_COMMAND} "-DTEST_EXECUTABLE=$<TARGET_FILE:MoreFacTest>"
++                     "-DTEST_INPUT_FILE=${CMAKE_CURRENT_SOURCE_DIR}/src/MoreFacTestIn"
++                     "-DTEST_OUTPUT_FILE=${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/MoreFacTest.out"
++                     -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ntl_run_test_diff.cmake")
++
++    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/subset1.in" "  40 40 20 10 999999 f")
++    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/subset2.in" "  40 40 20 10 999999 q")
++    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/subset.out" "")
++
++    foreach(SUBSET_CASE subset1 subset2)
++        add_test(NAME ${SUBSET_CASE}
++                 COMMAND ${CMAKE_COMMAND} "-DTEST_EXECUTABLE=$<TARGET_FILE:subset>"
++                         "-DTEST_INPUT_FILE=${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${SUBSET_CASE}.in"
++                         "-DTEST_OUTPUT_FILE=${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/subset.out"
++                         -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ntl_run_test_diff.cmake")
++    endforeach()
++
++    foreach(TEST_EXECUTABLE QuickTest ZZTest SSMulTest ZZ_pXTest lzz_pXTest GF2XTest GF2EXTest
++                            GF2EXGCDTest mat_lzz_pTest BitMatTest ZZ_pEXTest ZZ_pEXGCDTest
++                            lzz_pEXTest lzz_pEXGCDTest ThreadTest)
++        add_test(${TEST_EXECUTABLE} ${TEST_EXECUTABLE})
++    endforeach()
++endif()
+diff --git a/cmake/FindGF2X.cmake b/cmake/FindGF2X.cmake
+new file mode 100644
+index 0000000..8a31a5b
+--- /dev/null
++++ b/cmake/FindGF2X.cmake
+@@ -0,0 +1,20 @@
++
++find_path(GF2X_INCLUDE_DIRS NAMES gf2x.h PATHS ${GF2X_PREFIX}/include ${GF2X_INCDIR})
++
++find_library(GF2X_LIBRARIES gf2x PATHS ${GF2X_PREFIX}/lib ${GF2X_LIBDIR})
++
++try_run(GF2X_RUN_RESULT GF2X_COMPILE_RESULT
++    ${CMAKE_CURRENT_BINARY_DIR}
++    SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/gf2x_version_1_2_or_later_required.cpp"
++    LINK_LIBRARIES ${NTL_LINK_LIBRARIES} ${GF2X_LIBRARIES}
++    CMAKE_FLAGS INCLUDE_DIRECTORIES ${GF2X_INCLUDE_DIRS}
++)
++
++if (NOT "${GF2X_RUN_RESULT}" STREQUAL "0")
++    message(FATAL_ERROR "can't use gf2x, but requested")
++endif()
++
++include(FindPackageHandleStandardArgs)
++find_package_handle_standard_args(GF2X DEFAULT_MSG
++                                  GF2X_INCLUDE_DIRS GF2X_LIBRARIES)
++mark_as_advanced(GF2X_INCLUDE_DIRS GF2X_LIBRARIES)
+diff --git a/cmake/FindGMP.cmake b/cmake/FindGMP.cmake
+new file mode 100644
+index 0000000..c3c79da
+--- /dev/null
++++ b/cmake/FindGMP.cmake
+@@ -0,0 +1,8 @@
++find_path(GMP_INCLUDE_DIRS NAMES  gmp.h PATHS ${GMP_PREFIX}/include ${GMP_INCDIR})
++
++find_library(GMP_LIBRARIES gmp PATHS ${GMP_PREFIX}/lib ${GMP_LIBDIR})
++
++include(FindPackageHandleStandardArgs)
++find_package_handle_standard_args(GMP DEFAULT_MSG
++                                  GMP_INCLUDE_DIRS GMP_LIBRARIES)
++mark_as_advanced(GMP_INCLUDE_DIRS GMP_LIBRARIES)
+diff --git a/cmake/GetCXXStandard.cpp b/cmake/GetCXXStandard.cpp
+new file mode 100644
+index 0000000..5a59cfa
+--- /dev/null
++++ b/cmake/GetCXXStandard.cpp
+@@ -0,0 +1,25 @@
++#include <iostream>
++
++/* output language_standard
++
++   As of 2018, the available language standards are
++   199711, 201103, 201402, 201703.
++*/
++
++#ifndef __cplusplus
++#define __cplusplus 1
++#endif
++
++
++int main()
++{
++   long language_standard = __cplusplus;
++   // convert to one of 0, 98, 11, 14, 17
++   if      (language_standard >= 201703) language_standard = 17;
++   else if (language_standard >= 201402) language_standard = 14;
++   else if (language_standard >= 201103) language_standard = 11;
++   else if (language_standard >= 199711) language_standard = 98;
++   else                                  language_standard = 0;
++
++   std::cout << language_standard;
++}
+diff --git a/cmake/UserOverride.cmake b/cmake/UserOverride.cmake
+new file mode 100644
+index 0000000..e69dcdd
+--- /dev/null
++++ b/cmake/UserOverride.cmake
+@@ -0,0 +1,13 @@
++# This overrides the default CMake Debug and Release compiler options.
++# The user can still specify different options by setting the
++# CMAKE_CXX_FLAGS_[RELEASE,DEBUG] variables (on the command line or in the
++# CMakeList.txt). This files serves as better CMake defaults and should only be
++# modified if the default values are to be changed. Project specific compiler
++# flags should be set in the CMakeList.txt by setting the CMAKE_CXX_FLAGS_*
++# variables.
++
++# Remove -O3 by default in Release flags
++
++if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
++    set(CMAKE_CXX_FLAGS_RELEASE_INIT "-O2 -DNDEBUG")
++endif ()
+diff --git a/cmake/gen_feature_header.cmake b/cmake/gen_feature_header.cmake
+new file mode 100644
+index 0000000..8bbea62
+--- /dev/null
++++ b/cmake/gen_feature_header.cmake
+@@ -0,0 +1,31 @@
++if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/include/NTL/HAVE_${FEATURE}.h)
++    execute_process(COMMAND
++                    ${CMAKE_COMMAND} --build . --target Check${FEATURE} --config $<CONFIGURATION>
++                    RESULT_VARIABLE ${FEATURE}_COMPILE_RESULT
++                    OUTPUT_VARIABLE OUT
++                    ERROR_VARIABLE ERR)
++
++    set(${FEATURE}_RUN_RESULT "-1")
++
++    if ("${${FEATURE}_COMPILE_RESULT}" STREQUAL "0")
++        execute_process(COMMAND
++                    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/Check${FEATURE}${CMAKE_EXECUTABLE_SUFFIX_CXX}
++                    RESULT_VARIABLE ${FEATURE}_RUN_RESULT)
++    endif()
++
++    if ("${${FEATURE}_RUN_RESULT}" STREQUAL "0")
++        message("Looking for feature ${FEATURE} - found")
++        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/HAVE_${FEATURE}.h.in"
++"#ifndef NTL_HAVE_${FEATURE}
++#define NTL_HAVE_${FEATURE}
++#endif
++")
++    else()
++        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/HAVE_${FEATURE}.h.in" "")
++        message("Looking for feature ${FEATURE} - not found")
++        #  ${${FEATURE}_COMPILE_RESULT} ${${FEATURE}_RUN_RESULT} ${ERR} ${OUT})
++    endif()
++
++    configure_file("${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/HAVE_${FEATURE}.h.in" "${CMAKE_CURRENT_BINARY_DIR}/include/NTL/HAVE_${FEATURE}.h")
++endif()
++
+diff --git a/cmake/ntl_run_test_diff.cmake b/cmake/ntl_run_test_diff.cmake
+new file mode 100644
+index 0000000..0c65c39
+--- /dev/null
++++ b/cmake/ntl_run_test_diff.cmake
+@@ -0,0 +1,8 @@
++execute_process(COMMAND ${TEST_EXECUTABLE} INPUT_FILE "${TEST_INPUT_FILE}"
++         OUTPUT_VARIABLE TEST_OUTPUT)
++file(READ "${TEST_OUTPUT_FILE}" TEST_OUTPUT_EXPECTED)
++if (NOT "${TEST_OUTPUT}" STREQUAL "${TEST_OUTPUT_EXPECTED}")
++    message("Expected Output: ${TEST_OUTPUT_EXPECTED}")
++    message("Found Output:    ${TEST_OUTPUT}")
++    message(FATAL_ERROR "Output not expected")
++endif()
+diff --git a/src/config.h.in b/src/config.h.in
+new file mode 100644
+index 0000000..9510ce3
+--- /dev/null
++++ b/src/config.h.in
+@@ -0,0 +1,543 @@
++
++#ifndef NTL_config__H
++#define NTL_config__H
++
++/*************************************************************************
++
++                          NTL Configuration File
++                          ----------------------
++
++This file is automatically generated by the configure script.
++
++You can also edit this file by hand, but that is not generally recommended.
++
++To set a flag, just replace the pre-processor directive 
++'if 0' by 'if 1' for that flag, which causes the appropriate macro 
++to be defined.  Of course,  to unset a flag, just replace the 
++'if 1' by an 'if 0'.
++
++ *************************************************************************/
++
++
++
++/*************************************************************************
++ *
++ * Basic Configuration Options
++ *
++ *************************************************************************/
++
++
++ /* None of these flags are set by the configuration wizard;
++  * they must be set by hand, before installation begins.
++  */
++
++
++#if @NTL_LEGACY_NO_NAMESPACE@
++#define NTL_LEGACY_NO_NAMESPACE
++
++/* 
++ * By default, NTL components are declared inside the namespace NTL.
++ * Set this flag if you want to instead have these components
++ * declared in the global namespace.  This is for backward
++ * compatibility only -- not recommended.
++ *
++ */
++
++#endif
++
++
++#if @NTL_LEGACY_INPUT_ERROR@
++#define NTL_LEGACY_INPUT_ERROR
++
++/*
++ * Also for backward compatibility.  Set if you want input 
++ * operations to abort on error, instead of just setting the
++ * "fail bit" of the input stream.
++ *
++ */
++
++
++#endif
++
++#if @NTL_TLS_HACK@
++#define NTL_TLS_HACK
++
++/* Set if you want to compile NTL with "TLS hack"
++ *
++ */
++
++#endif
++
++#if @NTL_THREADS@
++#define NTL_THREADS
++
++/* Set if you want to compile NTL as a thread-safe library.
++ *
++ */
++
++#endif
++
++
++#if @NTL_EXCEPTIONS@
++#define NTL_EXCEPTIONS
++
++/* Set if you want to compile NTL with exceptions enabled
++ *
++ */
++
++#endif
++
++#if @NTL_THREAD_BOOST@
++#define NTL_THREAD_BOOST
++
++/* Set if you want to compile NTL to exploit threads internally.
++ *
++ */
++
++#endif
++
++
++#if @NTL_GMP_LIP@
++#define NTL_GMP_LIP
++
++/* 
++ * Use this flag if you want to use GMP as the long integer package.
++ * This can result in significantly faster code on some platforms.
++ * It requires that the GMP package (version >= 3.1) has already been
++ * installed.  You will also have to set the variables GMP_OPT_INCDIR,
++ * GMP_OPT_LIBDIR, GMP_OPT_LIB in the makefile (these are set automatically
++ * by the confiuration script when you pass the flag NTL_GMP_LIP=on
++ * to that script.
++ *
++ * Beware that setting this flag can break some very old NTL codes.
++ *
++ * You may also have to edit the makefile to modify the variables
++ * GMP_OPT_INCDIR, GMP_OPT_LIBDIR, and GMP_OPT_LIB.
++ */
++
++#endif
++
++#if @NTL_GF2X_LIB@
++#define NTL_GF2X_LIB
++
++/* 
++ * Use this flag if you want to use the gf2x library for
++ * faster GF2X arithmetic.
++ * This can result in significantly faster code, especially
++ * when working with polynomials of huge degree.
++ * You will also have to set the variables GF2X_OPT_INCDIR,
++ * GF2X_OPT_LIBDIR, GF2X_OPT_LIB in the makefile (these are set automatically
++ * by the confiuration script when you pass the flag NTL_GF2X_LIB=on
++ * to that script.
++ *
++ * You may also have to edit the makefile to modify the variables
++ * GF2X_OPT_INCDIR, GF2X_OPT_LIBDIR, and GF2X_OPT_LIB.
++ */
++
++#endif
++
++
++#if @NTL_STD_CXX11@
++#define NTL_STD_CXX11
++
++/*
++ * Set this flag if you want to enable C++11 features within NTL.
++ */
++
++#endif
++
++#if @NTL_STD_CXX14@
++#define NTL_STD_CXX14
++
++/*
++ * Set this flag if you want to enable C++14 features within NTL.
++ */
++
++#endif
++
++#if @NTL_DISABLE_MOVE_ASSIGN@
++#define NTL_DISABLE_MOVE_ASSIGN
++
++/*
++ * Set this flag if you want to disable move assignment
++ * operators for vectors (and, by extension, polynomials)
++ * and matrices.
++ */
++
++#endif
++
++#if @NTL_DISABLE_MOVE@
++#define NTL_DISABLE_MOVE
++
++/*
++ * This flag disables all move constructors and assignments. 
++ */
++
++#endif
++
++
++#if @FLAG_UNSIGNED_LONG_LONG_TYPE@
++#define NTL_UNSIGNED_LONG_LONG_TYPE @NTL_UNSIGNED_LONG_LONG_TYPE@
++
++/*
++ *   NTL_UNSIGNED_LONG_LONG_TYPE will be used
++ *   to declare 'double word' unsigned integer types.
++ *   If left undefined, some "ifdef magic" will attempt
++ *   to find the best choice for your platform, depending
++ *   on the compiler and wordsize.  On 32-bit machines,
++ *   this is usually 'unsigned long long'.
++ *
++ */
++
++#endif
++
++
++#if @NTL_CLEAN_INT@
++#define NTL_CLEAN_INT
++
++/*
++ *   This will disallow the use of some non-standard integer arithmetic
++ *   that may improve performance somewhat.
++ *
++ */
++
++#endif
++
++#if @NTL_CLEAN_PTR@
++#define NTL_CLEAN_PTR
++
++/*
++ *   This will disallow the use of some non-standard pointer arithmetic
++ *   that may improve performance somewhat.
++ *
++ */
++
++#endif
++
++#if @NTL_SAFE_VECTORS@
++#define NTL_SAFE_VECTORS
++
++/*
++ * This will compile NTL in "safe vector" mode, only assuming
++ * the relocatability property for trivial types and types
++ * explicitly declared relocatable.  See vector.txt for more details.
++ */
++
++#endif
++
++#if @NTL_ENABLE_AVX_FFT@
++#define NTL_ENABLE_AVX_FFT
++
++/*
++ * This will compile NTL in a way that enables an AVX implemention
++ * of the small-prime FFT.
++ */
++
++#endif
++
++
++#if @NTL_AVOID_AVX512@
++#define NTL_AVOID_AVX512
++
++/*
++ * This will compile NTL in a way that avoids 512-bit operations,
++ * even if AVX512 is available.
++ */
++
++#endif
++ 
++#if @NTL_RANGE_CHECK@
++#define NTL_RANGE_CHECK
++
++/*
++ *   This will generate vector subscript range-check code.
++ *   Useful for debugging, but it slows things down of course.
++ *
++ */
++
++#endif
++
++
++
++
++
++#if @NTL_NO_INIT_TRANS@
++#define NTL_NO_INIT_TRANS
++
++/*
++ *   Without this flag, NTL uses a special code sequence to avoid
++ *   copying large objects in return statements.  However, if your
++ *   compiler optimizes away the return of a *named* local object,
++ *   this is not necessary, and setting this flag will result
++ *   in *slightly* more compact and efficient code.  Although
++ *   the emeriging C++ standard allows compilers to perform
++ *   this optimization, I know of none that currently do.
++ *   Most will avoid copying *temporary* objects in return statements,
++ *   and NTL's default code sequence exploits this fact.
++ *
++ */
++
++#endif
++
++
++#if @NTL_X86_FIX@
++#define NTL_X86_FIX
++
++/*
++ *  Forces the "x86 floating point fix", overriding the default behavior.
++ *  By default, NTL will apply the "fix" if it looks like it is
++ *  necessary, and if knows how to fix it.
++ *  The problem addressed here is that x86 processors sometimes
++ *  run in a mode where FP registers have more precision than doubles.
++ *  This will cause code in quad_float.cpp some trouble.
++ *  NTL can normally correctly detect the problem, and fix it,
++ *  so you shouldn't need to worry about this or the next flag.
++ *  
++ */
++
++#elif @NTL_NO_X86_FIX@
++#define NTL_NO_X86_FIX
++/*
++ *  Forces no "x86 floating point fix", overriding the default behavior.
++ */
++
++#endif
++
++
++
++#if @NTL_LEGACY_SP_MULMOD@
++#define NTL_LEGACY_SP_MULMOD
++
++/* Forces legacy single-precision MulMod implementation.
++ */
++
++#endif
++
++
++#if @NTL_DISABLE_LONGDOUBLE@
++#define NTL_DISABLE_LONGDOUBLE
++
++/* Explicitly disables us of long double arithmetic
++ */
++
++#endif
++
++
++#if @NTL_DISABLE_LONGLONG@
++#define NTL_DISABLE_LONGLONG
++
++/* Explicitly disables us of long long arithmetic 
++ */
++
++#endif
++
++#if @NTL_DISABLE_LL_ASM@
++#define NTL_DISABLE_LL_ASM
++
++/* Explicitly disables us of inline assembly as a replacement
++ * for long lobg arithmetic.
++ */
++
++#endif
++
++
++#if @NTL_MAXIMIZE_SP_NBITS@
++#define NTL_MAXIMIZE_SP_NBITS
++
++/* Allows for 62-bit single-precision moduli on 64-bit platforms.
++ * By default, such moduli are restricted to 60 bits, which
++ * usually gives slightly better performance across a range of
++ * of parameters.
++ */
++
++#endif
++
++/*************************************************************************
++ *
++ *  Performance Options
++ *
++ *************************************************************************/
++
++
++
++/* There are three strategies to implmement single-precision
++ * modular multiplication with preconditioning (see the MulModPrecon
++ * function in the ZZ module): the default and NTL_SPMM_ULL.
++ * This plays a crucial role in the  "small prime FFT" used to 
++ * implement polynomial arithmetic, and in other CRT-based methods 
++ * (such as linear  algebra over ZZ), as well as polynomial and matrix 
++ * arithmetic over zz_p.  
++ */
++
++
++
++#if @NTL_SPMM_ULL@
++#define NTL_SPMM_ULL
++
++/*    This also causes an "all integer"
++ *    implementation of MulModPrecon to be used.
++ *    It us usually a faster implementation,
++ *    but it is not enturely portable.
++ *    It relies on double-word unsigned multiplication
++ *    (see NTL_UNSIGNED_LONG_LONG_TYPE above). 
++ *
++ */
++
++
++#endif
++
++
++
++/*
++ * The following two flags provide additional control for how the 
++ * FFT modulo single-precision primes is implemented.
++ */
++
++#if @NTL_FFT_BIGTAB@
++#define NTL_FFT_BIGTAB
++
++/*
++ * Precomputed tables are used to store all the roots of unity
++ * used in FFT computations. 
++ *
++ */
++
++
++#endif
++
++
++#if @NTL_FFT_LAZYMUL@
++#define  NTL_FFT_LAZYMUL
++
++/*
++ * When set, a "lazy multiplication" strategy due to David Harvey:
++ * see his paper "FASTER ARITHMETIC FOR NUMBER-THEORETIC TRANSFORMS".
++ *
++ */
++
++
++#endif
++
++
++
++#if @NTL_AVOID_BRANCHING@
++#define NTL_AVOID_BRANCHING
++
++/*
++ *   With this option, branches are replaced at several 
++ *   key points with equivalent code using shifts and masks.
++ *   It may speed things up on machines with 
++ *   deep pipelines and high branch penalities.
++ *   This flag mainly affects the implementation of the
++ *   single-precision modular arithmetic routines.
++ *
++ */
++
++#endif
++
++
++
++#if @NTL_TBL_REM@
++#define NTL_TBL_REM
++
++/*
++ *
++ *   With this flag, some divisions are avoided in the
++ *   ZZ_pX multiplication routines.  
++ *
++ */
++
++#endif
++
++
++
++#if @NTL_CRT_ALTCODE@
++#define NTL_CRT_ALTCODE
++
++/*
++ * Employs an alternative CRT strategy.
++ * Only relevant with GMP.
++ * Seems to be marginally faster on some x86_64 platforms.
++ *
++ */
++
++#endif
++
++#if @NTL_CRT_ALTCODE_SMALL@
++#define NTL_CRT_ALTCODE_SMALL
++
++/*
++ * Employs an alternative CRT strategy for small moduli.
++ * Only relevant with GMP.
++ * Seems to be marginally faster on some x86_64 platforms.
++ *
++ */
++
++#endif
++
++
++#if @NTL_GF2X_ALTCODE@
++#define NTL_GF2X_ALTCODE
++
++/*
++ * With this option, the default strategy for implmenting low-level
++ * GF2X multiplication is replaced with an alternative strategy.
++ * This alternative strategy seems to work better on RISC machines
++ * with deep pipelines and high branch penalties (like a powerpc),
++ * but does no better (or even worse) on x86s.
++ *
++ */
++
++#elif @NTL_GF2X_ALTCODE1@
++#define NTL_GF2X_ALTCODE1
++
++
++/*
++ * Yest another alternative strategy for implementing GF2X
++ * multiplication.
++ *
++ */
++
++
++#endif
++
++#if @NTL_GF2X_NOINLINE@
++#define NTL_GF2X_NOINLINE
++
++/*
++ * By default, the low-level GF2X multiplication routine in inlined.
++ * This can potentially lead to some trouble on some platforms,
++ * and you can override the default by setting this flag.
++ *
++ */
++
++#endif
++
++
++
++/* sanity checks */
++
++#if (defined(NTL_THREAD_BOOST) && !defined(NTL_THREADS))
++#error "NTL_THREAD_BOOST defined but not NTL_THREADS"
++#endif
++
++
++#if (defined(NTL_THREADS) && !(defined(NTL_STD_CXX11) || defined(NTL_STD_CXX14)))
++#error "NTL_THREADS defined but not NTL_STD_CXX11 or NTL_STD_CXX14"
++#endif
++
++
++#if (defined(NTL_EXCEPTIONS) && !(defined(NTL_STD_CXX11) || defined(NTL_STD_CXX14)))
++#error "NTL_EXCEPTIONS defined but not NTL_STD_CXX11 or NTL_STD_CXX14"
++#endif
++
++
++#if (defined(NTL_SAFE_VECTORS) && !(defined(NTL_STD_CXX11) || defined(NTL_STD_CXX14)))
++#error "NTL_SAFE_VECTORS defined but not NTL_STD_CXX11 or NTL_STD_CXX14"
++#endif
++
++
++@WIZARD_HACK@
++
++
++#endif
