@@ -7,7 +7,7 @@ package:
 
 source:
   fn: {{ name }}-{{ version }}.tar.gz
-  url: https://libntl.org/ntl-{{ version }}.tar.gz
+  url: https://www.shoup.net/ntl/ntl-{{ version }}.tar.gz
   sha256: bc0ef9aceb075a6a0673ac8d8f47d5f8458c72fe806e4468fbd5d3daff056182
   patches:
     - 0001-Do-not-run-binaries-when-cross-compiling-for-Silicon.patch  # [build_platform != target_platform and target_platform == "osx-arm64"]
