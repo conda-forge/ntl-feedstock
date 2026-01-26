@@ -23,6 +23,7 @@ requirements:
     - libtool
     - automake
     - make
+    - {{ stdlib('c') }}
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
   host:
