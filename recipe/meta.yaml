@@ -1,4 +1,4 @@
-{% set version = "11.5.1" %}
+{% set version = "11.6.0" %}
 {% set name = "ntl" %}
 
 package:
@@ -7,8 +7,8 @@ package:
 
 source:
   fn: {{ name }}-{{ version }}.tar.gz
-  url: http://www.shoup.net/ntl/ntl-{{ version }}.tar.gz
-  sha256: 210d06c31306cbc6eaf6814453c56c776d9d8e8df36d74eb306f6a523d1c6a8a
+  url: https://libntl.org/ntl-{{ version }}.tar.gz
+  sha256: bc0ef9aceb075a6a0673ac8d8f47d5f8458c72fe806e4468fbd5d3daff056182
   patches:
     - 0001-Do-not-run-binaries-when-cross-compiling-for-Silicon.patch  # [build_platform != target_platform and target_platform == "osx-arm64"]
 
@@ -40,8 +40,9 @@ test:
     - test -f $PREFIX/lib/lib{{ name }}.dylib      # [osx]
 
 about:
-  home: http://www.shoup.net/ntl/
-  doc_url: http://www.shoup.net/ntl/doc/tour.html
+  home: https://libntl.org/
+  doc_url: https://libntl.org/doc/tour.html
+  dev_url: https://github.com/libntl/ntl
   license: LGPL-2.1-or-later
   license_file: doc/copying.txt
   summary: A Library for doing Number Theory
