@@ -1026,13 +1026,13 @@ diff --git a/src/mfile b/src/mfile
 index ecc9b43..b888d33 100644
 --- a/src/mfile
 +++ b/src/mfile
-@@ -349,42 +349,47 @@ setup-phase: need-to-run-configure
+@@ -349,42 +349,48 @@ setup-phase: need-to-run-configure
  	touch setup-phase
  
  
 -# setup1 generates the file ../incluse/NTL/mach_desc.h
 -
--setup1: 
+ setup1: 
 -	$(COMPILE) MakeDescAux.cpp
 -	$(LINK) -o MakeDesc MakeDesc.cpp MakeDescAux.o $(LDLIBS)
 -	./MakeDesc
