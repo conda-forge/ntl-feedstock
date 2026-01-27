@@ -1,4 +1,4 @@
-{% set version = "11.5.1" %}
+{% set version = "11.6.0" %}
 {% set name = "ntl" %}
 
 package:
@@ -7,8 +7,13 @@ package:
 
 source:
   fn: {{ name }}-{{ version }}.tar.gz
-  url: http://www.shoup.net/ntl/ntl-{{ version }}.tar.gz
-  sha256: 210d06c31306cbc6eaf6814453c56c776d9d8e8df36d74eb306f6a523d1c6a8a
+  # Upstream does not like our builders and times out almost always when downloading.
+  # Therefore, we use the tarball on GitHub which is not identical to the one
+  # upstream, see
+  # https://github.com/conda-forge/ntl-feedstock/pull/26#issuecomment-3801646143
+  # url: https://libntl.org/ntl-{{ version }}.tar.gz
+  url: https://github.com/libntl/ntl/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 30e29eb21c5da6db031fc7dc5b1a6c728f226c7128e922421247157bc89ecd86
   patches:
     - 0001-Do-not-run-binaries-when-cross-compiling-for-Silicon.patch  # [build_platform != target_platform and target_platform == "osx-arm64"]
 
@@ -23,6 +28,7 @@ requirements:
     - libtool
     - automake
     - make
+    - {{ stdlib('c') }}
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
   host:
@@ -40,8 +46,9 @@ test:
     - test -f $PREFIX/lib/lib{{ name }}.dylib      # [osx]
 
 about:
-  home: http://www.shoup.net/ntl/
-  doc_url: http://www.shoup.net/ntl/doc/tour.html
+  home: https://libntl.org/
+  doc_url: https://libntl.org/doc/tour.html
+  dev_url: https://github.com/libntl/ntl
   license: LGPL-2.1-or-later
   license_file: doc/copying.txt
   summary: A Library for doing Number Theory
