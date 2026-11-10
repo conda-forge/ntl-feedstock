@@ -1,59 +1,65 @@
-{% set version = "11.6.0" %}
-{% set name = "ntl" %}
+schema_version: 1
+
+context:
+  version: "11.6.0"
+  name: ntl
 
 package:
-  name: {{ name }}
-  version: {{ version }}
+  name: ${{ name }}
+  version: ${{ version }}
 
 source:
-  fn: {{ name }}-{{ version }}.tar.gz
   # Upstream does not like our builders and times out almost always when downloading.
   # Therefore, we use the tarball on GitHub which is not identical to the one
   # upstream, see
   # https://github.com/conda-forge/ntl-feedstock/pull/26#issuecomment-3801646143
   # url: https://libntl.org/ntl-{{ version }}.tar.gz
-  url: https://github.com/libntl/ntl/archive/refs/tags/v{{ version }}.tar.gz
+  url: https://github.com/libntl/ntl/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 30e29eb21c5da6db031fc7dc5b1a6c728f226c7128e922421247157bc89ecd86
+  file_name: ${{ name }}-${{ version }}.tar.gz
   patches:
-    - 0001-Do-not-run-binaries-when-cross-compiling-for-Silicon.patch  # [build_platform != target_platform and target_platform == "osx-arm64"]
+    - if: build_platform != target_platform and target_platform == "osx-arm64"
+      then: 0001-Do-not-run-binaries-when-cross-compiling-for-Silicon.patch
 
 build:
   number: 0
-  skip: true        # [win]
-  run_exports:
-    - ntl {{ version }}
+  skip: win
 
 requirements:
   build:
     - libtool
     - automake
     - make
-    - {{ stdlib('c') }}
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
   host:
     - gf2x
     - gmp
   run:
     - gf2x
     - gmp
+  run_exports:
+    - ${{ pin_subpackage('ntl', exact=True) }}
 
-test:
-  commands:
-    - test -f $PREFIX/include/NTL/ZZ.h
-    - test -f $PREFIX/lib/lib{{ name }}.a
-    - test -f $PREFIX/lib/lib{{ name }}.so         # [linux]
-    - test -f $PREFIX/lib/lib{{ name }}.dylib      # [osx]
+tests:
+  - script:
+      - test -f $PREFIX/include/NTL/ZZ.h
+      - test -f $PREFIX/lib/lib${{ name }}.a
+      - if: linux
+        then: test -f $PREFIX/lib/lib${{ name }}.so
+      - if: osx
+        then: test -f $PREFIX/lib/lib${{ name }}.dylib
 
 about:
-  home: https://libntl.org/
-  doc_url: https://libntl.org/doc/tour.html
-  dev_url: https://github.com/libntl/ntl
   license: LGPL-2.1-or-later
   license_file: doc/copying.txt
   summary: A Library for doing Number Theory
   description: |
     NTL is a high-performance, portable C++ library providing data structures and algorithms for manipulating signed, arbitrary length integers, and for vectors, matrices, and polynomials over the integers and over finite fields.
+  homepage: https://libntl.org/
+  repository: https://github.com/libntl/ntl
+  documentation: https://libntl.org/doc/tour.html
 
 extra:
   recipe-maintainers:
