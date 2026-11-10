@@ -16,7 +16,6 @@ source:
   # url: https://libntl.org/ntl-{{ version }}.tar.gz
   url: https://github.com/libntl/ntl/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 30e29eb21c5da6db031fc7dc5b1a6c728f226c7128e922421247157bc89ecd86
-  file_name: ${{ name }}-${{ version }}.tar.gz
   patches:
     - if: build_platform != target_platform and target_platform == "osx-arm64"
       then: 0001-Do-not-run-binaries-when-cross-compiling-for-Silicon.patch
