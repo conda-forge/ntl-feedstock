@@ -22,7 +22,7 @@ source:
       then: 0001-Do-not-run-binaries-when-cross-compiling-for-Silicon.patch
 
 build:
-  number: 0
+  number: 1
   skip: win
 
 requirements:
