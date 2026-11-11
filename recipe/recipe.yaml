@@ -24,13 +24,18 @@ source:
 
 build:
   number: 1
-  skip: win
 
 requirements:
   build:
-    - libtool
-    - automake
-    - make
+    - if: unix
+      then:
+        - libtool
+        - automake
+        - make
+    - if: win
+      then:
+        - cmake
+        - ninja
     - ${{ stdlib('c') }}
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
@@ -45,8 +50,15 @@ requirements:
 
 tests:
   - script:
-      - test -f $PREFIX/include/NTL/ZZ.h
-      - test -f $PREFIX/lib/lib${{ name }}.a
+      - if: unix
+        then:
+          - test -f $PREFIX/include/NTL/ZZ.h
+          - test -f $PREFIX/lib/lib${{ name }}.a
+      - if: win
+        then:
+          - if not exist %LIBRARY_INC%\NTL\ZZ.h exit 1
+          - if not exist %LIBRARY_INC%\NTL\config.h exit 1
+          - if not exist %LIBRARY_LIB%\${{ name }}.lib exit 1
       - if: linux
         then: test -f $PREFIX/lib/lib${{ name }}.so
       - if: osx
