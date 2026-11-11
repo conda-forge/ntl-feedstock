@@ -1,0 +1,19 @@
+From: Julian Rüth <julian.rueth@fsfe.org>
+Subject: [PATCH] Fix _ntl_leftrotate when a limb is wider than a long
+
+With GMP on 64-bit Windows, a limb is 64 bits while a long is 32 bits, so
+NTL_ZZ_NBITS is 64 and ebits can be 32 or more. Shifting 1L by that much is
+undefined and made SSMul/SSSqr compute wrong products (caught by
+SSMulTest.)
+---
+--- a/src/lip.cpp
++++ b/src/lip.cpp
+@@ -9187,7 +9187,7 @@
+ 
+    if (ebits) {
+       if (special_carry) {
+-         NTL_MPN(sub_1)(adata, adata, nwords, (1L << ebits) - 1L);
++         NTL_MPN(sub_1)(adata, adata, nwords, (_ntl_limb_t(1) << ebits) - 1);
+       }
+       else if (sa == nwords) {
+          _ntl_limb_t shout = NTL_MPN(lshift)(adata, adata, sa, ebits);

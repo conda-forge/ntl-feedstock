@@ -19,16 +19,23 @@ source:
   patches:
     - if: build_platform != target_platform and target_platform == "osx-arm64"
       then: 0001-Do-not-run-binaries-when-cross-compiling-for-Silicon.patch
+    # Fixes SSMul with GMP when a long is narrower than a limb, i.e., on win-64.
+    - 0002-Fix-leftrotate-when-a-limb-is-wider-than-a-long.patch
 
 build:
-  number: 1
-  skip: win
+  number: 2
 
 requirements:
   build:
-    - libtool
-    - automake
-    - make
+    - if: unix
+      then:
+        - libtool
+        - automake
+        - make
+    - if: win
+      then:
+        - cmake
+        - ninja
     - ${{ stdlib('c') }}
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
@@ -43,8 +50,15 @@ requirements:
 
 tests:
   - script:
-      - test -f $PREFIX/include/NTL/ZZ.h
-      - test -f $PREFIX/lib/lib${{ name }}.a
+      - if: unix
+        then:
+          - test -f $PREFIX/include/NTL/ZZ.h
+          - test -f $PREFIX/lib/lib${{ name }}.a
+      - if: win
+        then:
+          - if not exist %LIBRARY_INC%\NTL\ZZ.h exit 1
+          - if not exist %LIBRARY_INC%\NTL\config.h exit 1
+          - if not exist %LIBRARY_LIB%\${{ name }}.lib exit 1
       - if: linux
         then: test -f $PREFIX/lib/lib${{ name }}.so
       - if: osx
