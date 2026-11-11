@@ -19,6 +19,8 @@ source:
   patches:
     - if: build_platform != target_platform and target_platform == "osx-arm64"
       then: 0001-Do-not-run-binaries-when-cross-compiling-for-Silicon.patch
+    # Fixes SSMul with GMP when a long is narrower than a limb, i.e., on win-64.
+    - 0002-Fix-leftrotate-when-a-limb-is-wider-than-a-long.patch
 
 build:
   number: 1
